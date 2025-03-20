@@ -12,9 +12,7 @@ const c = @cImport({
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
-
     const stdout = std.io.getStdOut().writer();
-
     const dir = (try fs.openDir("./")) orelse return error.DirOpenFailed;
     defer {
         fs.closeDir(dir) catch {
