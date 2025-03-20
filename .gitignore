@@ -1,2 +1,29 @@
-.zig-cache/
+# Zig build artifacts
+zig-cache/
 zig-out/
+
+# Binary output
+zigfs
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE specific
+.vscode/
+.idea/
+
+# Dependencies
+deps/
+
+# Debug files
+*.pdb
+
+# Test artifacts
+*.test
+
+# System specific
+._*
+.Spotlight-V100
+.Trashes
