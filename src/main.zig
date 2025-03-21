@@ -1,7 +1,3 @@
-// TODO:
-// - Functionality for CLI tool. Research how to make "os" command
-// File Tag System
-
 const std = @import("std");
 const ls = @import("cmd_ls.zig");
 
