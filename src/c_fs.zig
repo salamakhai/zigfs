@@ -52,7 +52,17 @@ pub fn printFileInfo(allocator: std.mem.Allocator, entry: *c.dirent, writer: any
         const pw = c.getpwuid(stat_buf.st_uid);
         const gr = c.getgrgid(stat_buf.st_gid);
 
-        try writer.print("{s} {d: >3} {s: <8} {s: <8} {d: >8} {s}\n", .{ mode, stat_buf.st_nlink, if (pw) |p| std.mem.span(p.*.pw_name) else "unknown", if (gr) |g| std.mem.span(g.*.gr_name) else "unknown", stat_buf.st_size, name });
+        try writer.print(
+            "{s} {d: >3} {s: <8} {s: <8} {d: >8} {s}\n",
+            .{ //
+                mode, //
+                stat_buf.st_nlink, //
+                if (pw) |p| std.mem.span(p.*.pw_name) else "unknown", //
+                if (gr) |g| std.mem.span(g.*.gr_name) else "unknown", //
+                stat_buf.st_size, //
+                name, //
+            },
+        );
     }
 }
 
