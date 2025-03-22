@@ -1,4 +1,5 @@
 const std = @import("std");
+const cfs = @import("cfs");
 
 const c = @cImport({
     @cInclude("dirent.h");
@@ -9,38 +10,24 @@ const c = @cImport({
     @cInclude("time.h");
 });
 
-const DirError = error{ DirOpenFailed, DirCloseFailed, AllocationFailed, OutOfMemory };
-
-pub fn openDir(path: []const u8) DirError!?*c.DIR {
-    const dir = c.opendir(@ptrCast(path.ptr));
-    if (dir == null) {
-        std.debug.print("Error opening directory: {s}\n", .{path});
-        return DirError.DirOpenFailed;
-    }
-    return dir;
-}
-
-pub fn closeDir(dir: *c.DIR) DirError!void {
-    if (c.closedir(dir) != 0) {
-        return DirError.DirCloseFailed;
-    }
-    return;
-}
-
-pub fn readDir(allocator: std.mem.Allocator, dir: *c.DIR) DirError![]*c.dirent {
-    var entries = std.ArrayList(*c.dirent).init(allocator);
-
-    while (true) {
-        const entry = c.readdir(dir);
-        if (entry == null) break;
-
-        try entries.append(entry);
+pub fn run(allocator: std.mem.Allocator) !void {
+    const stdout = std.io.getStdOut().writer();
+    const dir = (try cfs.openDir("./")) orelse return error.DirOpenFailed;
+    defer {
+        cfs.closeDir(dir) catch {
+            std.debug.print("Error closing directory\n", .{});
+        };
     }
 
-    return entries.toOwnedSlice();
+    const entries = try cfs.readDir(allocator, dir);
+    defer allocator.free(entries);
+
+    for (entries) |entry| {
+        try printFileInfo(allocator, entry, stdout);
+    }
 }
 
-pub fn printFileInfo(allocator: std.mem.Allocator, entry: *c.dirent, writer: anytype) !void {
+fn printFileInfo(allocator: std.mem.Allocator, entry: *c.dirent, writer: anytype) !void {
     var stat_buf: c.struct_stat = undefined;
     const name = std.mem.sliceTo(&entry.d_name, 0);
 
@@ -66,7 +53,6 @@ pub fn printFileInfo(allocator: std.mem.Allocator, entry: *c.dirent, writer: any
     }
 }
 
-// helpers
 fn formatMode(mode: c_uint) ![10:0]u8 {
     var result = [_:0]u8{'-'} ** 10;
 
@@ -83,3 +69,5 @@ fn formatMode(mode: c_uint) ![10:0]u8 {
 
     return result;
 }
+
+// fn readArgs(args: std.process.ArgIterator) !void {}

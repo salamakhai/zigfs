@@ -1,5 +1,5 @@
 const std = @import("std");
-const ls = @import("cmd_ls.zig");
+const ls = @import("fs-commads/ls.zig");
 
 const c = @cImport({
     @cInclude("dirent.h");
@@ -35,6 +35,7 @@ pub fn main() !void {
         return;
     };
 
+    // commands handlers
     if (std.mem.eql(u8, command, "ls")) {
         try ls.run(allocator);
         return;

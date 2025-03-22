@@ -28,11 +28,11 @@ pub fn build(b: *std.Build) void {
 
     // Modules
     const cdirs_mod = b.createModule(.{
-        .root_source_file = b.path("src/c_fs.zig"),
+        .root_source_file = b.path("src/cfs.zig"),
         .target = target,
         .optimize = optimize,
     });
-    exe_mod.addImport("c_fs", cdirs_mod);
+    exe_mod.addImport("cfs", cdirs_mod);
 
     // --- AUTO ---
 
