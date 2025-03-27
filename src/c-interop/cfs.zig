@@ -9,25 +9,25 @@ const c = @cImport({
     @cInclude("time.h");
 });
 
-const DirError = error{ DirOpenFailed, DirCloseFailed, AllocationFailed, OutOfMemory };
+const Error = error{ DirOpenFailed, DirCloseFailed, AllocationFailed, OutOfMemory };
 
-pub fn openDir(path: []const u8) DirError!?*c.DIR {
+pub fn openDir(path: []const u8) Error!?*c.DIR {
     const dir = c.opendir(@ptrCast(path.ptr));
     if (dir == null) {
         std.debug.print("Error opening directory: {s}\n", .{path});
-        return DirError.DirOpenFailed;
+        return Error.DirOpenFailed;
     }
     return dir;
 }
 
-pub fn closeDir(dir: *c.DIR) DirError!void {
+pub fn closeDir(dir: *c.DIR) Error!void {
     if (c.closedir(dir) != 0) {
-        return DirError.DirCloseFailed;
+        return Error.DirCloseFailed;
     }
     return;
 }
 
-pub fn readDir(allocator: std.mem.Allocator, dir: *c.DIR) DirError![]*c.dirent {
+pub fn readDir(allocator: std.mem.Allocator, dir: *c.DIR) Error![]*c.dirent {
     var entries = std.ArrayList(*c.dirent).init(allocator);
 
     while (true) {

@@ -1,5 +1,6 @@
 const std = @import("std");
 const ls = @import("fs-commads/ls.zig");
+const cd = @import("fs-commads/cd.zig");
 
 const c = @cImport({
     @cInclude("dirent.h");
@@ -15,9 +16,8 @@ fn printUsage(writer: anytype) !void {
         \\Usage: zigfs command [args]
         \\
         \\Commands:
-        \\  ls  Content list
-        \\
-        \\
+        \\  ls Content list
+        \\  cd [path] Change directory
     );
 }
 
@@ -38,6 +38,11 @@ pub fn main() !void {
     // commands handlers
     if (std.mem.eql(u8, command, "ls")) {
         try ls.run(allocator);
+        return;
+    }
+    if (std.mem.eql(u8, command, "cd")) {
+        const path = args.next();
+        try cd.run(path);
         return;
     }
 
