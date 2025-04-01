@@ -6,3 +6,5 @@ Process:
 - cp/cd/mv ...
 - Network tools: simple curl (if it can be simple)
 - Extender of file's metadata: create tag system for files searching
+
+- Multithreaded recursive files finder
