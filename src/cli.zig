@@ -1,5 +1,7 @@
 const std = @import("std");
+
 const ls = @import("fs-commands/ls.zig");
+const cd = @import("fs-commands/cd.zig");
 
 pub fn printUsage(writer: anytype) !void {
     try writer.writeAll(
@@ -7,9 +9,7 @@ pub fn printUsage(writer: anytype) !void {
         \\
         \\Commands:
         \\  ls         - List directory contents
-        \\  cd [path]  - Change directory (defaults to current dir if no path)
-        \\  pwd        - Print current working directory
-        \\
+        \\  cls        - Clear terminal screen
     );
 }
 
@@ -30,6 +30,11 @@ pub fn handleArgs(allocator: std.mem.Allocator) !void {
         try ls.list_directory();
         return;
     }
+    // if (std.mem.eql(u8, command, "cd")) {
+    //     const path = args.next() orelse ".";
+    //     try cd.change_directory(path);
+    //     return;
+    // }
 
     try printUsage(stdout);
     try stdout.print("Error: Unknown command '{s}'\n", .{command});
