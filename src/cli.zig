@@ -2,7 +2,7 @@ const std = @import("std");
 
 const ls = @import("fs-commands/ls.zig");
 const cd = @import("fs-commands/cd.zig");
-
+const find = @import("fs-commands/find.zig");
 
 pub const Writer = std.fs.File.Writer;
 
@@ -25,16 +25,16 @@ pub const CommandFn = *const fn (
 pub const Command = struct {
     /// Command name used in CLI
     name: []const u8,
-    
+
     /// Short description for help text
     description: []const u8,
-    
+
     /// Usage example
     usage: []const u8,
-    
+
     /// Help text with detailed explanation
     help: []const u8,
-    
+
     /// The function to execute this command
     execute: CommandFn,
 };
@@ -45,13 +45,13 @@ pub const commands = [_]Command{
         .name = "ls",
         .description = "List directory contents",
         .usage = "ls [directory]",
-        .help = 
-            \\Lists files and directories in the specified path.
-            \\If no path is provided, lists the current directory.
-            \\
-            \\Examples:
-            \\  ls             List current directory
-            \\  ls /some/path  List contents of /some/path
+        .help =
+        \\Lists files and directories in the specified path.
+        \\If no path is provided, lists the current directory.
+        \\
+        \\Examples:
+        \\  ls             List current directory
+        \\  ls /some/path  List contents of /some/path
         ,
         .execute = ls.execute,
     },
@@ -60,16 +60,31 @@ pub const commands = [_]Command{
         .name = "cd",
         .description = "Change current directory",
         .usage = "cd [directory]",
-        .help = 
-            \\Changes the current working directory.
-            \\If no path is provided, changes to home directory.
-            \\
-            \\Examples:
-            \\  cd             Change to home directory
-            \\  cd /some/path  Change to /some/path
-            \\  cd ..          Move up one directory
+        .help =
+        \\Changes the current working directory.
+        \\If no path is provided, changes to home directory.
+        \\
+        \\Examples:
+        \\  cd             Change to home directory
+        \\  cd /some/path  Change to /some/path
+        \\  cd ..          Move up one directory
         ,
         .execute = cd.execute,
+    },
+
+    Command{
+        .name = "find",
+        .description = "Find files matching a pattern",
+        .usage = "find pattern [path]",
+        .help =
+        \\ Concurent search for files with names containing the specified pattern.
+        \\ If no path is provided, searches in the current directory.
+        \\
+        \\ Examples:
+        \\ find test       Find files containing 'test' in current directory
+        \\ find .txt /test Find .txt files in /test directory
+        ,
+        .execute = find.execute,
     },
 };
 
@@ -80,11 +95,11 @@ pub fn printUsage(writer: Writer) !void {
         \\
         \\Commands:
     );
-    
+
     for (commands) |cmd| {
-        try writer.print("\n  {s: <10} - {s}", .{cmd.name, cmd.description});
+        try writer.print("\n  {s: <10} - {s}", .{ cmd.name, cmd.description });
     }
-    
+
     try writer.writeAll("\n\nUse 'zigfs help [command]' for more information about a command.\n");
 }
 
@@ -99,7 +114,7 @@ pub fn printCommandHelp(writer: Writer, command_name: []const u8) !bool {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -115,20 +130,20 @@ fn findCommand(name: []const u8) ?*const Command {
 /// Main function to handle command line arguments
 pub fn handleArgs(allocator: std.mem.Allocator) !void {
     const stdout = std.io.getStdOut().writer();
-    
+
     // Parse command line arguments
     var args_iter = try std.process.argsWithAllocator(allocator);
     defer args_iter.deinit();
-    
+
     // Skip program name
     _ = args_iter.skip();
-    
+
     // Get command name or show usage if none
     const command_name = args_iter.next() orelse {
         try printUsage(stdout);
         return;
     };
-    
+
     if (std.mem.eql(u8, command_name, "help")) {
         const help_topic = args_iter.next();
         if (help_topic) |topic| {
@@ -143,25 +158,25 @@ pub fn handleArgs(allocator: std.mem.Allocator) !void {
         }
         return;
     }
-    
+
     // Handle command execution
     if (findCommand(command_name)) |cmd| {
         // Remaining arguments
         var command_args = std.ArrayList([]const u8).init(allocator);
         defer command_args.deinit();
-        
+
         while (args_iter.next()) |arg| {
             try command_args.append(arg);
         }
-        
+
         // Execute command
         cmd.execute(allocator, command_args.items, stdout) catch |err| {
-            try stdout.print("Error executing '{s}': {s}\n", .{command_name, @errorName(err)});
+            try stdout.print("Error executing '{s}': {s}\n", .{ command_name, @errorName(err) });
             std.process.exit(1);
         };
         return;
     }
-    
+
     // Command not found
     try printUsage(stdout);
     try stdout.print("Error: Unknown command '{s}'\n", .{command_name});
