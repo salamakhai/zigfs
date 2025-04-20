@@ -2,13 +2,6 @@ const std = @import("std");
 const cli = @import("cli");
 const cmd = @import("cmd");
 
-pub const MainError = error{
-    OutOfMemory,
-    InitializationFailed,
-    SignalError,
-    InvalidArgument,
-};
-
 pub const ExitCode = enum(u8) {
     Success = 0,
     GeneralError = 1,
@@ -18,6 +11,7 @@ pub const ExitCode = enum(u8) {
     SignalError = 5,
 };
 
+/// Application entry
 pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
@@ -55,7 +49,6 @@ pub fn main() !u8 {
 }
 
 // ----PRIVATE----
-
 fn signalHandlers() !void {
     // Handlers for SIGINT, SIGTERM, etc.
 }

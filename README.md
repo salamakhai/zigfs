@@ -50,11 +50,12 @@ zigfs
 # TODOs
 - [x] Multithreaded recursive files finder
 - [ ] Multi steps commands, complex chains 
+- [ ] Advanced args, default args
 - [ ] Create tests for commands
 - [ ] Progress indicators for long operations
 - [ ] cp/mv/rm
 - [ ] Network tools: simple curl (if it can be simple)
 
 Ideas pool:
-- [ ] "Friendly" cli. Chainable readble commands with user friendly step by step interactions
+- [ ] "Friendly" cli. Readble commands chain syntax with user friendly step by step interactions
 - [ ] Extender of file's metadata: create tag system for files searching

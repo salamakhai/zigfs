@@ -1,5 +1,5 @@
 const std = @import("std");
-const types = @import("cli_types");
+const cli = @import("cli");
 
 pub const FindError = error{
     PathNotFound,
@@ -16,7 +16,7 @@ pub const FindError = error{
 ///   allocator: Memory allocator
 ///   args: Command arguments ([pattern] [path])
 ///   writer: Output writer
-pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: types.cmd.Writer) !void {
+pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: cli.Writer) !void {
     if (args.len < 1) {
         try writer.print("Usage: find pattern [path]\n", .{});
         try writer.print("  pattern: Text to search for in file names\n", .{});
@@ -42,7 +42,7 @@ fn searchDirectoryRecursive(
     allocator: std.mem.Allocator,
     dir_path: []const u8,
     pattern: []const u8,
-    writer: types.cmd.Writer,
+    writer: cli.Writer,
     depth: usize,
 ) !void {
     if (depth > 32) return;

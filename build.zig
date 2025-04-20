@@ -7,7 +7,6 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Executable
     const exe_mod = b.createModule(.{
         // `root_source_file` is the Zig "entry point" of the module. If a module
         // only contains e.g. external object files, you can make this `null`.
@@ -19,26 +18,23 @@ pub fn build(b: *std.Build) void {
     });
 
     // ---CLI---
-    const cli_types = b.createModule(.{
-        .root_source_file = b.path("src/cli/types.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
     const cli_module = b.createModule(.{
         .root_source_file = b.path("src/cli/module.zig"),
         .target = target,
         .optimize = optimize,
     });
-    cli_module.addImport("cli_types", cli_types);
 
-    // ---COMMANDS---
-    const commands_module = b.createModule(.{
+    cli_module.addImport("cli", cli_module); // self ref
+
+    // ---CMD---
+    const cmd_module = b.createModule(.{
         .root_source_file = b.path("src/cmd/module.zig"),
         .target = target,
         .optimize = optimize,
     });
-    commands_module.addImport("cli_types", cli_types);
+
+    cmd_module.addImport("cmd", cmd_module); // self ref
+    cmd_module.addImport("cli", cli_module);
 
     // -----------------
 
@@ -51,10 +47,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // exe dependecies
-    exe.root_module.addImport("cli_types", cli_types);
+    // Dependecies
     exe.root_module.addImport("cli", cli_module);
-    exe.root_module.addImport("cmd", commands_module);
+    exe.root_module.addImport("cmd", cmd_module);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

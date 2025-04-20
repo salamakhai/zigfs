@@ -5,7 +5,6 @@ pub const Writer = std.fs.File.Writer;
 pub const CliError = error{
     UnknownCommand,
     CommandFailed,
-    MissingRequiredArgument,
     InvalidArgument,
     OutOfMemory,
 };
@@ -31,14 +30,8 @@ pub const CommandFn = *const fn (
 
 pub const Command = struct {
     name: []const u8,
-
-    /// Short description for help text
     description: []const u8,
-
-    /// Usage example
     usage: []const u8,
-
-    /// Help text with detailed explanation
     help: []const u8,
 
     execute: CommandFn,

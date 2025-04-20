@@ -1,9 +1,9 @@
 const std = @import("std");
-const types = @import("cli_types");
+const cli = @import("cli");
 
-pub fn printUsage(
-    registry: types.cmd.Registry,
-    writer: types.cmd.Writer,
+pub fn printInfo(
+    registry: cli.Registry,
+    writer: cli.Writer,
 ) !void {
     try writer.writeAll(
         \\Usage: zigfs command [args]
@@ -19,8 +19,8 @@ pub fn printUsage(
 }
 
 pub fn printCommandHelp(
-    registry: types.cmd.Registry,
-    writer: types.cmd.Writer,
+    registry: cli.Registry,
+    writer: cli.Writer,
     command_name: []const u8,
 ) !bool {
     for (registry.commands) |cmd| {
