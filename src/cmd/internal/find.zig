@@ -18,9 +18,13 @@ pub const FindError = error{
 ///   writer: Output writer
 pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: cli.Writer) !void {
     if (args.len < 1) {
-        try writer.print("Usage: find pattern [path]\n", .{});
-        try writer.print("  pattern: Text to search for in file names\n", .{});
-        try writer.print("  path: Directory to search in (defaults to current)\n", .{});
+        try writer.print(
+            \\ Usage: find pattern [path]
+            \\  pattern: Text to search for in file names
+            \\  path: Directory to search in (defaults to current)
+        ,
+            .{},
+        );
         return FindError.PathNotFound;
     }
 

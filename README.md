@@ -1,4 +1,4 @@
-# zigfs
+# zigfs 
 
 `zigfs` is a colletion of simple zig CLI tools.
 
@@ -49,9 +49,12 @@ zigfs
 
 # TODOs
 - [x] Multithreaded recursive files finder
-- [ ] Multi steps commands, complex chains 
+- [ ] mount command
+- [ ] Multi steps commands, chains 
 - [ ] Advanced args, default args
 - [ ] Create tests for commands
+- [ ] cut command? Files reader
+- [ ] loop for interactive (session) mode?
 - [ ] Progress indicators for long operations
 - [ ] cp/mv/rm
 - [ ] Network tools: simple curl (if it can be simple)
