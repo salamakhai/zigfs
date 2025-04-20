@@ -4,7 +4,6 @@ const std = @import("std");
 // declaratively construct a build graph that will be executed by an external
 // runner.
 pub fn build(b: *std.Build) void {
-    
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
@@ -19,6 +18,30 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    // ---CLI---
+    const cli_types = b.createModule(.{
+        .root_source_file = b.path("src/cli/types.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const cli_module = b.createModule(.{
+        .root_source_file = b.path("src/cli/module.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    cli_module.addImport("cli_types", cli_types);
+
+    // ---COMMANDS---
+    const commands_module = b.createModule(.{
+        .root_source_file = b.path("src/cmd/module.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    commands_module.addImport("cli_types", cli_types);
+
+    // -----------------
+
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.
     const exe = b.addExecutable(.{
@@ -27,6 +50,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    // exe dependecies
+    exe.root_module.addImport("cli_types", cli_types);
+    exe.root_module.addImport("cli", cli_module);
+    exe.root_module.addImport("cmd", commands_module);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

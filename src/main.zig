@@ -1,5 +1,6 @@
 const std = @import("std");
-const cli = @import("cli.zig");
+const cli = @import("cli");
+const cmd = @import("cmd");
 
 pub const MainError = error{
     OutOfMemory,
@@ -17,21 +18,6 @@ pub const ExitCode = enum(u8) {
     SignalError = 5,
 };
 
-/// Handle application shutdown (for future signal handling)
-fn handleShutdown() void {
-    // Perform any necessary cleanup before program exit
-    // This could include saving state, closing connections, etc.
-    std.debug.print("Shutting down...\n", .{});
-}
-
-/// Setup signal handlers for clean termination
-fn setupSignalHandlers() !void {
-    // This is a placeholder for signal handling
-    // In a real implementation, we would set up handlers for SIGINT, SIGTERM, etc.
-    // Since Zig's signal handling is still evolving, this is left as a future enhancement
-}
-
-/// Main entry point for the application
 pub fn main() !u8 {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
@@ -40,21 +26,19 @@ pub fn main() !u8 {
             std.debug.print("Warning: Memory leaks detected\n", .{});
         }
     }
-    
+
     var arena = std.heap.ArenaAllocator.init(gpa.allocator());
     defer arena.deinit();
-    
+
     const allocator = arena.allocator();
     const stderr = std.io.getStdErr().writer();
-    
-    // Set up signal handlers
-    setupSignalHandlers() catch |err| {
+
+    signalHandlers() catch |err| {
         try stderr.print("Warning: Could not set up signal handlers: {s}\n", .{@errorName(err)});
         // Continue execution - this is non-fatal
     };
-    
-    // Process command line arguments
-    cli.handleArgs(allocator) catch |err| {
+
+    cli.handleCmdArgs(cmd.Registry, allocator) catch |err| {
         switch (err) {
             error.OutOfMemory => {
                 try stderr.print("Error: Out of memory\n", .{});
@@ -68,4 +52,15 @@ pub fn main() !u8 {
         }
     };
     return @intFromEnum(ExitCode.Success);
+}
+
+// ----PRIVATE----
+
+fn signalHandlers() !void {
+    // Handlers for SIGINT, SIGTERM, etc.
+}
+
+fn handleShutdown() void {
+    // Cleanup
+    std.debug.print("Shutting down...\n", .{});
 }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const cli = @import("../cli.zig");
+const types = @import("cli_types");
 
 pub const LsError = error{
     PathNotFound,
@@ -16,7 +16,7 @@ pub const LsError = error{
 ///   allocator: Memory allocator (unused)
 ///   args: Command arguments (first arg is the path, defaults to current directory)
 ///   writer: Output writer
-pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: cli.Writer) !void {
+pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: types.cmd.Writer) !void {
     _ = allocator;
 
     const path = if (args.len > 0) args[0] else ".";

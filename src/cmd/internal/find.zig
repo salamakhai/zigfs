@@ -1,5 +1,5 @@
 const std = @import("std");
-const cli = @import("../cli.zig");
+const types = @import("cli_types");
 
 pub const FindError = error{
     PathNotFound,
@@ -16,12 +16,7 @@ pub const FindError = error{
 ///   allocator: Memory allocator
 ///   args: Command arguments ([pattern] [path])
 ///   writer: Output writer
-pub fn execute(
-    allocator: std.mem.Allocator,
-    args: []const []const u8,
-    writer: cli.Writer,
-) !void {
-    // Validate arguments
+pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: types.cmd.Writer) !void {
     if (args.len < 1) {
         try writer.print("Usage: find pattern [path]\n", .{});
         try writer.print("  pattern: Text to search for in file names\n", .{});
@@ -38,20 +33,20 @@ pub fn execute(
     const arena_allocator = arena.allocator();
     const pattern_copy = try arena_allocator.dupe(u8, pattern);
 
-    try searchDirectory(arena_allocator, root_path, pattern_copy, writer, 0);
+    try searchDirectoryRecursive(arena_allocator, root_path, pattern_copy, writer, 0);
 }
 
-/// Recursive function that searches a directory and its subdirectories.
-fn searchDirectory(
+// ----PRIVATE----
+
+fn searchDirectoryRecursive(
     allocator: std.mem.Allocator,
     dir_path: []const u8,
     pattern: []const u8,
-    writer: cli.Writer,
+    writer: types.cmd.Writer,
     depth: usize,
 ) !void {
     if (depth > 32) return;
 
-    // Open the directory for iteration
     var dir = std.fs.cwd().openDir(dir_path, .{ .iterate = true }) catch |err| {
         switch (err) {
             error.FileNotFound => return FindError.PathNotFound,
@@ -69,7 +64,6 @@ fn searchDirectory(
             else => return FindError.ReadDirError,
         }
     }) |entry| {
-        // Check if entry name contains the pattern
         if (std.mem.indexOf(u8, entry.name, pattern) != null) {
             if (dir_path.len > 0 and dir_path[dir_path.len - 1] == '/') {
                 try writer.print("{s}{s}\n", .{ dir_path, entry.name });
@@ -78,7 +72,6 @@ fn searchDirectory(
             }
         }
 
-        // For directories, continue search recursively
         if (entry.kind == .directory) {
             var path_buffer = std.ArrayList(u8).init(allocator);
             defer path_buffer.deinit();
@@ -92,7 +85,7 @@ fn searchDirectory(
 
             const new_path = try allocator.dupe(u8, path_buffer.items);
 
-            try searchDirectory(allocator, new_path, pattern, writer, depth + 1);
+            try searchDirectoryRecursive(allocator, new_path, pattern, writer, depth + 1);
         }
     }
 }
