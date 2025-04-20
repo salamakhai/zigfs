@@ -49,7 +49,8 @@ zigfs
 
 # TODOs
 - [x] Multithreaded recursive files finder
-- [ ] mount command
+- [ ] FUSE research
+- [ ] mount utilities
 - [ ] Multi steps commands, chains 
 - [ ] Advanced args, default args
 - [ ] Create tests for commands
