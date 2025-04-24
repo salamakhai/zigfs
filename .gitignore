@@ -27,3 +27,5 @@ deps/
 ._*
 .Spotlight-V100
 .Trashes
+
+test/
