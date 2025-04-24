@@ -15,22 +15,12 @@ pub fn build(b: *std.Build) void {
 
     // ---CLI---
     const cli_module = b.createModule(.{
-        .root_source_file = b.path("src/cli/module.zig"),
+        .root_source_file = b.path("cli/cli.zig"),
         .target = target,
         .optimize = optimize,
     });
-
-    cli_module.addImport("cli", cli_module); // self ref
-
-    // ---CMD---
-    const cmd_module = b.createModule(.{
-        .root_source_file = b.path("src/cmd/module.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    cmd_module.addImport("cmd", cmd_module); // self ref
-    cmd_module.addImport("cli", cli_module);
+    // circular
+    cli_module.addImport("cli", cli_module);
 
     // -----------------
 
@@ -43,7 +33,6 @@ pub fn build(b: *std.Build) void {
 
     // Dependecies
     exe.root_module.addImport("cli", cli_module);
-    exe.root_module.addImport("cmd", cmd_module);
 
     b.installArtifact(exe);
 

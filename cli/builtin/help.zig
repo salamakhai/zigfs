@@ -1,9 +1,13 @@
 const std = @import("std");
 const cli = @import("cli");
 
-pub fn printInfo(
-    registry: cli.Registry,
-    writer: cli.Writer,
+const Writer = cli.Writer;
+const Registry = cli.Registry;
+const Command = cli.Command;
+
+pub fn printHelp(
+    registry: Registry,
+    writer: Writer,
 ) !void {
     try writer.writeAll(
         \\Usage: zigfs command [args]
@@ -18,7 +22,7 @@ pub fn printInfo(
     try writer.writeAll("\n\nUse 'zigfs help [command]' for more information about a command.\n");
 }
 
-pub fn printCommandHelp(
+pub fn printCmdHelp(
     registry: cli.Registry,
     writer: cli.Writer,
     command_name: []const u8,

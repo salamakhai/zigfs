@@ -32,7 +32,7 @@ pub fn main() !u8 {
         // Continue execution - this is non-fatal
     };
 
-    cli.handleCmdArgs(cmd.Registry, allocator) catch |err| {
+    cli.runCmd(cmd.Registry, allocator) catch |err| {
         switch (err) {
             error.OutOfMemory => {
                 try stderr.print("Error: Out of memory\n", .{});
