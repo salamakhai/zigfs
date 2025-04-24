@@ -1,6 +1,7 @@
 const std = @import("std");
 const builtin_help = @import("builtin/help.zig");
 
+pub const Reader = std.fs.File.Reader;
 pub const Writer = std.fs.File.Writer;
 
 pub const CLI = @import("core/CLI.zig").CLI;

@@ -1,20 +1,17 @@
 const std = @import("std");
 const cli = @import("cli");
 
-const Writer = cli.Writer;
-
-// main command line runner
-// invoke commands
-// use cli argiments
+const CLI = cli.CLI;
 
 pub const Runner = struct {
-    writer: Writer,
+    runtimeCLI: *CLI,
 
-    pub fn runCmd(
+    pub fn run(
+        self: *Runner,
         registry: cli.Registry,
         allocator: std.mem.Allocator,
     ) !void {
-        const stdout = std.io.getStdOut().writer();
+        const writer = self.runtimeCLI.writer;
 
         var args_iter = try std.process.argsWithAllocator(allocator);
         defer args_iter.deinit();
@@ -22,21 +19,21 @@ pub const Runner = struct {
         _ = args_iter.skip();
 
         const command_name = args_iter.next() orelse {
-            try cli.printHelp(registry, stdout);
+            try cli.printHelp(registry, writer);
             return;
         };
 
         if (std.mem.eql(u8, command_name, "help")) {
             const help_topic = args_iter.next();
             if (help_topic) |topic| {
-                const found = try cli.printCmdHelp(registry, stdout, topic);
+                const found = try cli.printCmdHelp(registry, writer, topic);
                 if (!found) {
-                    try stdout.print("Unknown command: '{s}'\n\n", .{topic});
-                    try cli.printHelp(registry, stdout);
+                    try writer.print("Unknown command: '{s}'\n\n", .{topic});
+                    try cli.printHelp(registry, writer);
                     std.process.exit(1);
                 }
             } else {
-                try cli.printHelp(registry, stdout);
+                try cli.printHelp(registry, writer);
             }
             return;
         }
@@ -49,15 +46,15 @@ pub const Runner = struct {
                 try command_args.append(arg);
             }
 
-            cmd.execute(allocator, command_args.items, stdout) catch |err| {
-                try stdout.print("Error executing '{s}': {s}\n", .{ command_name, @errorName(err) });
+            cmd.execute(allocator, command_args.items, writer) catch |err| {
+                try writer.print("Error executing '{s}': {s}\n", .{ command_name, @errorName(err) });
                 std.process.exit(1);
             };
             return;
         }
 
-        try cli.printHelp(registry, stdout);
-        try stdout.print("Error: Unknown command '{s}'\n", .{command_name});
+        try cli.printHelp(registry, writer);
+        try writer.print("Error: Unknown command '{s}'\n", .{command_name});
         std.process.exit(1);
     }
 };

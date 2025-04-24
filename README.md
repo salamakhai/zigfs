@@ -1,6 +1,42 @@
-# zigfs 
+# ZigFS
 
-`zigfs` is a colletion of simple zig CLI tools.
+A filesystem toolset written in Zig
+
+## Building
+
+To build ZigFS:
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/zigfs.git
+cd zigfs
+
+# Build using zig
+zig build
+
+# Run the executable
+./zig-out/bin/zigfs
+```
+
+## Basic Usage
+
+ZigFS uses a command-based interface:
+
+```bash
+zigfs <command> [arguments]
+```
+
+For help with available commands:
+
+```bash
+zigfs help
+```
+
+For help with a specific command:
+
+```bash
+zigfs help <command>
+```
 
 ## Features
 
