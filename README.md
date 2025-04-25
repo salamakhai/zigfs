@@ -64,7 +64,7 @@ Create symlink to the binary:
 sudo ln -s "$(pwd)/zig-out/bin/zigfs" /usr/local/bin/zigfs
 ```
 
-To remove the symlink later:
+To remove symlink later:
 
 ```sh
 sudo rm /usr/local/bin/zigfs
@@ -78,7 +78,7 @@ zigfs
 
 
 
-# TODOs
+## TODOs and notes
 - [x] Multithreaded recursive files finder
 - [ ] FUSE research
 - [ ] mount utilities

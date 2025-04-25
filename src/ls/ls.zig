@@ -5,9 +5,7 @@ pub const LsError = error{
     PathNotFound,
     AccessDenied,
     NotADirectory,
-    OutOfMemory,
     ReadDirError,
-    WriteError,
 };
 
 /// Main function to handle the ls command
@@ -16,8 +14,14 @@ pub const LsError = error{
 ///   allocator: Memory allocator (unused)
 ///   args: Command arguments (first arg is the path, defaults to current directory)
 ///   writer: Output writer
-pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: cli.Writer) !void {
-    _ = allocator;
+pub fn process(
+    runner: *cli.Runner,
+    args: []const []const u8,
+    reader: cli.Reader,
+    writer: cli.Writer,
+) anyerror!void {
+    _ = runner;
+    _ = reader;
 
     const path = if (args.len > 0) args[0] else ".";
     var dir = std.fs.cwd().openDir(path, .{ .iterate = true }) catch |err| {

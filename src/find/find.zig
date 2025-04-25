@@ -16,7 +16,15 @@ pub const FindError = error{
 ///   allocator: Memory allocator
 ///   args: Command arguments ([pattern] [path])
 ///   writer: Output writer
-pub fn execute(allocator: std.mem.Allocator, args: []const []const u8, writer: cli.Writer) !void {
+pub fn process(
+    runner: *cli.Runner,
+    args: []const []const u8,
+    reader: cli.Reader,
+    writer: cli.Writer,
+) anyerror!void {
+    const allocator = runner.core.allocator;
+    _ = reader;
+
     if (args.len < 1) {
         try writer.print(
             \\ Usage: find pattern [path]
@@ -48,7 +56,7 @@ fn searchDirectoryRecursive(
     pattern: []const u8,
     writer: cli.Writer,
     depth: usize,
-) !void {
+) anyerror!void {
     if (depth > 32) return;
 
     var dir = std.fs.cwd().openDir(dir_path, .{ .iterate = true }) catch |err| {
