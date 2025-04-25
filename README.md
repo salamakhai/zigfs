@@ -1,10 +1,10 @@
-# ZigFS
+# ZIGFS
 
 A filesystem toolset written in Zig
 
 ## Building
 
-To build ZigFS:
+To build zigfs:
 
 ```bash
 # Clone the repository
@@ -19,8 +19,6 @@ zig build
 ```
 
 ## Basic Usage
-
-ZigFS uses a command-based interface:
 
 ```bash
 zigfs <command> [arguments]
@@ -39,9 +37,6 @@ zigfs help <command>
 ```
 
 ## Features
-
-- `ls [directory]` — List directory contents  
-- `find pattern [path]` — Find files matching a pattern  
 
 Use `zigfs help` for detailed help on each command.
 
