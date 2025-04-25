@@ -1,7 +1,7 @@
 const std = @import("std");
 const cli = @import("cli");
 
-const commands = @import("registry.zig").commands;
+const registry = @import("registry.zig");
 
 pub const ExitCode = enum(u8) {
     Success = 0,
@@ -27,6 +27,10 @@ pub fn main() !u8 {
 
     const allocator = arena.allocator();
     const stderr = std.io.getStdErr().writer();
+
+    // Create a mutable copy of the commands
+    const commands = try allocator.alloc(cli.Command, registry.commands.len);
+    @memcpy(commands, registry.commands);
 
     var args_iter = try std.process.argsWithAllocator(allocator);
     defer args_iter.deinit();

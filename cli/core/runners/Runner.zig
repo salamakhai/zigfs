@@ -48,7 +48,7 @@ pub const Runner = struct {
     //
     pub fn run(
         self: *Runner,
-        command: *const Command,
+        command: *Command,
         args: []const []const u8,
     ) anyerror!void {
         const reader = self.core.reader;
@@ -57,64 +57,73 @@ pub const Runner = struct {
         if (!try command.isInteractive()) {
             // once
             command.process(
+                command,
                 self,
                 args,
                 reader,
                 writer,
             ) catch |err| {
                 try writer.print("\nError executing command '{s}': {s}\n", .{ command.name, @errorName(err) });
+                return err;
             };
-        } else {
-            // loop
-            try writer.print("\n Entered iteractive mode.\n", .{});
-            try writer.print("Type 'help' for available commands, 'exit' to quit.\n\n", .{});
+            return;
+        }
 
-            var isRunning = true;
+        try writer.print("Type 'help' for available commands, 'exit' to quit.\n\n", .{});
 
-            while (isRunning) {
-                try writer.print(DEFAULT_PROMPT, .{});
+        var isRunning = true;
 
-                // read input
-                var input_buffer: [MAX_INPUT_LENGTH]u8 = undefined;
-                const input = reader.readUntilDelimiterOrEof(&input_buffer, '\n') catch |err| {
-                    try writer.print("Error reading input: {s}\n", .{@errorName(err)});
-                    continue;
-                } orelse {
-                    isRunning = false;
-                    break;
-                };
+        while (isRunning) {
+            try writer.print(DEFAULT_PROMPT, .{});
 
-                const trimmed_input = std.mem.trim(u8, input, &std.ascii.whitespace);
-                if (trimmed_input.len == 0) {
-                    continue;
-                }
-                // TODO: append state history
+            // read input
+            var input_buffer: [MAX_INPUT_LENGTH]u8 = undefined;
+            const input = reader.readUntilDelimiterOrEof(&input_buffer, '\n') catch |err| {
+                try writer.print("Error reading input: {s}\n", .{@errorName(err)});
+                continue;
+            } orelse {
+                isRunning = false;
+                break;
+            };
 
-                var args_iter = std.mem.tokenizeAny(u8, trimmed_input, " \t");
-                const command_name = args_iter.next() orelse {
-                    continue;
-                };
+            const trimmed_input = std.mem.trim(u8, input, &std.ascii.whitespace);
+            if (trimmed_input.len == 0) {
+                continue;
+            }
+            // TODO: append state history
 
-                if (std.mem.eql(u8, command_name, "exit")) {
-                    isRunning = false;
-                    continue;
-                }
+            var args_iter = std.mem.tokenizeAny(u8, trimmed_input, " \t");
+            const command_name = args_iter.next() orelse {
+                continue;
+            };
 
-                if (command.findSubCommand(command_name)) |subCommand| {
-                    subCommand.process(
-                        command,
-                        args,
-                        reader,
-                        writer,
-                    ) catch |err| {
-                        try writer.print("\nError executing sub-command '{s}': {s}\n", .{ subCommand.name, @errorName(err) });
-                    };
-                    continue;
-                }
+            if (std.mem.eql(u8, command_name, "exit")) {
+                isRunning = false;
+                continue;
             }
 
-            try writer.print("Exiting interactive mode.\n", .{});
+            if (command.findSubCommand(command_name)) |subCommand| {
+                var args_arr = std.ArrayList([]const u8).init(self.core.allocator);
+                defer args_arr.deinit();
+
+                while (args_iter.next()) |arg| {
+                    try args_arr.append(arg);
+                }
+
+                subCommand.process(
+                    subCommand,
+                    command,
+                    args_arr.items,
+                    reader,
+                    writer,
+                ) catch |err| {
+                    try writer.print("\nError executing sub-command '{s}': {s}\n", .{ subCommand.name, @errorName(err) });
+                };
+                continue;
+            }
         }
+
+        try writer.print("Exiting interactive mode.\n", .{});
     }
 
     //

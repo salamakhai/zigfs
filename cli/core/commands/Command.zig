@@ -3,12 +3,14 @@ const cli = @import("cli");
 
 pub const Command = struct {
     name: []const u8,
+    description: []const u8,
     help: []const u8,
 
     process: Processor,
-    subCommands: []const cli.SubCommand = undefined,
+    subCommands: []cli.SubCommand = undefined,
 
     pub const Processor = *const fn (
+        self: *Command,
         runner: *cli.Runner,
         args: []const []const u8,
         reader: cli.Reader,
@@ -19,7 +21,7 @@ pub const Command = struct {
         return self.subCommands.len > 0;
     }
 
-    pub fn findSubCommand(self: *const Command, name: []const u8) ?*const cli.SubCommand {
+    pub fn findSubCommand(self: *const Command, name: []const u8) ?*cli.SubCommand {
         for (self.subCommands) |*subCommand| {
             if (std.mem.eql(u8, subCommand.name, name)) {
                 return subCommand;

@@ -17,13 +17,16 @@ pub const FindError = error{
 ///   args: Command arguments ([pattern] [path])
 ///   writer: Output writer
 pub fn process(
+    self: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,
     reader: cli.Reader,
     writer: cli.Writer,
 ) anyerror!void {
-    const allocator = runner.core.allocator;
+    _ = self;
     _ = reader;
+
+    const allocator = runner.core.allocator;
 
     if (args.len < 1) {
         try writer.print(

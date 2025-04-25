@@ -13,12 +13,17 @@ pub const CoreError = error{
 };
 
 pub const Core = struct {
+    //
+    // ---CONSTANTS---
+    //
+    pub const HELP_COMMAND: []const u8 = "help";
+
     allocator: std.mem.Allocator,
     reader: Reader,
     writer: Writer,
 
     // Variables
-    commands: []const cli.Command,
+    commands: []cli.Command,
     initialized: bool = false,
 
     runner: cli.Runner,
@@ -30,7 +35,7 @@ pub const Core = struct {
         allocator: std.mem.Allocator,
         reader: Reader,
         writer: Writer,
-        commands: []const cli.Command,
+        commands: []cli.Command,
     ) !*Core {
         var instance = try allocator.create(Core);
         instance.* = Core{
@@ -63,29 +68,10 @@ pub const Core = struct {
     ) anyerror!void {
         const allocator = self.allocator;
         const writer = self.writer;
-        const registry = self.commands;
 
         _ = args_iter.skip();
 
-        const command_name = args_iter.next() orelse {
-            try cli.printHelp(registry, writer);
-            return;
-        };
-
-        if (std.mem.eql(u8, command_name, "help")) {
-            const help_topic = args_iter.next();
-            if (help_topic) |topic| {
-                const found = try cli.printCmdHelp(registry, writer, topic);
-                if (!found) {
-                    try writer.print("Unknown command: '{s}'\n\n", .{topic});
-                    try cli.printHelp(registry, writer);
-                    std.process.exit(1);
-                }
-            } else {
-                try cli.printHelp(registry, writer);
-            }
-            return;
-        }
+        const command_name = args_iter.next() orelse Core.HELP_COMMAND;
 
         if (self.findCommand(command_name)) |cmd| {
             var command_args = std.ArrayList([]const u8).init(allocator);
@@ -105,15 +91,14 @@ pub const Core = struct {
             return;
         }
 
-        try cli.printHelp(registry, writer);
         try writer.print("Error: Unknown command '{s}'\n", .{command_name});
         std.process.exit(1);
     }
 
     //
-    // ---PRIVATE---
+    // ---HELPERS---
     //
-    fn findCommand(self: *const Core, name: []const u8) ?*const cli.Command {
+    pub fn findCommand(self: *const Core, name: []const u8) ?*cli.Command {
         for (self.commands) |*command| {
             if (std.mem.eql(u8, command.name, name)) {
                 return command;

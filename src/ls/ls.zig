@@ -15,11 +15,13 @@ pub const LsError = error{
 ///   args: Command arguments (first arg is the path, defaults to current directory)
 ///   writer: Output writer
 pub fn process(
+    self: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,
     reader: cli.Reader,
     writer: cli.Writer,
 ) anyerror!void {
+    _ = self;
     _ = runner;
     _ = reader;
 
