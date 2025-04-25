@@ -1,16 +1,75 @@
 const std = @import("std");
 const cli = @import("cli");
+const Image = @import("data/Image.zig").Image;
+const ImageError = @import("data/Image.zig").ImageError;
+const Allocator = std.mem.Allocator;
+const fs = std.fs;
 
 pub fn process(
-    self: *cli.Command,
+    _: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,
     reader: cli.Reader,
     writer: cli.Writer,
 ) anyerror!void {
-    _ = self;
-    _ = runner;
-    _ = args;
     _ = reader;
-    _ = writer;
+
+    if (args.len < 2) {
+        return;
+    }
+
+    const image_path = args[1];
+
+    try writer.print("Mounting image: {s}...\n", .{image_path});
+    try writer.flush();
+
+    // Open the image file
+    const file = fs.cwd().openFile(image_path, .{ .mode = .read_only }) catch |err| {
+        switch (err) {
+            error.FileNotFound => {
+                try writer.print("Error: Image file not found: {s}\n", .{image_path});
+                try writer.flush();
+                return;
+            },
+            error.AccessDenied => {
+                try writer.print("Error: Permission denied accessing: {s}\n", .{image_path});
+                try writer.flush();
+                return;
+            },
+            else => {
+                try writer.print("Error opening file: {any}\n", .{err});
+                try writer.flush();
+                return;
+            },
+        }
+    };
+    errdefer file.close();
+
+    // Process the ext4 image
+    const mounted_image = Image.open(runner.core.allocator, file) catch |err| {
+        switch (err) {
+            ImageError.InvalidMagicNumber, ImageError.NotExt4Format => {
+                try writer.print("Error: Not a valid ext4 filesystem: {s}\n", .{image_path});
+                try writer.flush();
+                return;
+            },
+            ImageError.InvalidBlockSize => {
+                try writer.print("Error: Invalid block size in ext4 filesystem\n", .{});
+                try writer.flush();
+                return;
+            },
+            ImageError.ReadError => {
+                try writer.print("Error: Failed to read data from image file\n", .{});
+                try writer.flush();
+                return;
+            },
+            else => {
+                try writer.print("Error processing image: {any}\n", .{err});
+                try writer.flush();
+                return;
+            },
+        }
+    };
+
+    _ = mounted_image;
 }

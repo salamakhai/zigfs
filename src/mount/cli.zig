@@ -2,7 +2,7 @@ const cli = @import("cli");
 const Process = @import("mount.zig").process;
 
 pub const cmd = cli.Command{
-    .name = "ls",
+    .name = "mount",
     .description = "mount [image]",
     .help =
     \\mount [directory]
@@ -15,4 +15,5 @@ pub const cmd = cli.Command{
     \\  
     ,
     .process = Process,
+    .interactive = true,
 };

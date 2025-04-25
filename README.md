@@ -1,14 +1,13 @@
 # ZIGFS
 
-A filesystem toolset written in Zig
+A filesystem toolset written in Zig  
+[Github link](https://github.com/isalamaha/zigfs.git)
 
 ## Building
 
 To build zigfs:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/zigfs.git
 cd zigfs
 
 # Build using zig
@@ -35,10 +34,6 @@ For help with a specific command:
 ```bash
 zigfs help <command>
 ```
-
-## Features
-
-Use `zigfs help` for detailed help on each command.
 
 ## How to run globally
 
@@ -80,17 +75,14 @@ zigfs
 
 ## TODOs and notes
 - [x] Multithreaded recursive files finder
-- [ ] FUSE research
+- [x] FUSE research
+- [ ] Reader/Writer for runner interactive mode?
 - [ ] mount utilities
-- [ ] Multi steps commands, chains 
-- [ ] Advanced args, default args
+- [x] Multi steps commands, chains 
 - [ ] Create tests for commands
 - [ ] cut command? Files reader
-- [ ] loop for interactive (session) mode?
+- [x] loop for interactive (session) mode?
 - [ ] Progress indicators for long operations
-- [ ] cp/mv/rm
-- [ ] Network tools: simple curl (if it can be simple)
 
 Ideas pool:
-- [ ] "Friendly" cli. Readble commands chain syntax with user friendly step by step interactions
 - [ ] Extender of file's metadata: create tag system for files searching

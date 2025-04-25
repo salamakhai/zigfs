@@ -54,7 +54,7 @@ pub const Runner = struct {
         const reader = self.core.reader;
         const writer = self.core.writer;
 
-        if (!try command.isInteractive()) {
+        if (!command.interactive) {
             // once
             command.process(
                 command,

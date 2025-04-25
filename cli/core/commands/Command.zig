@@ -7,6 +7,9 @@ pub const Command = struct {
     help: []const u8,
 
     process: Processor,
+
+    interactive: bool = false,
+    // TODO: add context
     subCommands: []cli.SubCommand = undefined,
 
     pub const Processor = *const fn (
@@ -17,10 +20,6 @@ pub const Command = struct {
         writer: cli.Writer,
     ) anyerror!void;
 
-    pub fn isInteractive(self: *const Command) !bool {
-        return self.subCommands.len > 0;
-    }
-
     pub fn findSubCommand(self: *const Command, name: []const u8) ?*cli.SubCommand {
         for (self.subCommands) |*subCommand| {
             if (std.mem.eql(u8, subCommand.name, name)) {
@@ -29,4 +28,7 @@ pub const Command = struct {
         }
         return null;
     }
+
+    // PrintInfo
+    // PrintUsage
 };
