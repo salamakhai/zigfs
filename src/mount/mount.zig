@@ -14,31 +14,27 @@ pub fn process(
 ) anyerror!void {
     _ = reader;
 
-    if (args.len < 2) {
+    if (args.len == 0) {
         return;
     }
 
-    const image_path = args[1];
+    const image_path = args[0];
 
     try writer.print("Mounting image: {s}...\n", .{image_path});
-    try writer.flush();
 
     // Open the image file
     const file = fs.cwd().openFile(image_path, .{ .mode = .read_only }) catch |err| {
         switch (err) {
             error.FileNotFound => {
                 try writer.print("Error: Image file not found: {s}\n", .{image_path});
-                try writer.flush();
                 return;
             },
             error.AccessDenied => {
                 try writer.print("Error: Permission denied accessing: {s}\n", .{image_path});
-                try writer.flush();
                 return;
             },
             else => {
                 try writer.print("Error opening file: {any}\n", .{err});
-                try writer.flush();
                 return;
             },
         }
@@ -50,22 +46,18 @@ pub fn process(
         switch (err) {
             ImageError.InvalidMagicNumber, ImageError.NotExt4Format => {
                 try writer.print("Error: Not a valid ext4 filesystem: {s}\n", .{image_path});
-                try writer.flush();
                 return;
             },
             ImageError.InvalidBlockSize => {
                 try writer.print("Error: Invalid block size in ext4 filesystem\n", .{});
-                try writer.flush();
                 return;
             },
             ImageError.ReadError => {
                 try writer.print("Error: Failed to read data from image file\n", .{});
-                try writer.flush();
                 return;
             },
             else => {
                 try writer.print("Error processing image: {any}\n", .{err});
-                try writer.flush();
                 return;
             },
         }

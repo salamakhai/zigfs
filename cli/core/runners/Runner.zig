@@ -54,22 +54,23 @@ pub const Runner = struct {
         const reader = self.core.reader;
         const writer = self.core.writer;
 
+        command.process(
+            command,
+            self,
+            args,
+            reader,
+            writer,
+        ) catch |err| {
+            try writer.print("\nError executing command '{s}': {s}\n", .{ command.name, @errorName(err) });
+            return err;
+        };
+
         if (!command.interactive) {
             // once
-            command.process(
-                command,
-                self,
-                args,
-                reader,
-                writer,
-            ) catch |err| {
-                try writer.print("\nError executing command '{s}': {s}\n", .{ command.name, @errorName(err) });
-                return err;
-            };
             return;
         }
 
-        try writer.print("Type 'help' for available commands, 'exit' to quit.\n\n", .{});
+        try writer.print("\nType 'help' for available commands, 'exit' to quit.\n\n", .{});
 
         var isRunning = true;
 
@@ -123,7 +124,7 @@ pub const Runner = struct {
             }
         }
 
-        try writer.print("Exiting interactive mode.\n", .{});
+        try writer.print("\nExiting interactive mode.\n", .{});
     }
 
     //
