@@ -21,12 +21,11 @@ pub const Core = struct {
     allocator: std.mem.Allocator,
     reader: Reader,
     writer: Writer,
+    commands: []cli.Command,
 
     // Variables
-    commands: []cli.Command,
     initialized: bool = false,
-
-    runner: cli.Runner,
+    runner: cli.Runner = undefined,
 
     //
     // ---LIFECYCLE---
@@ -43,19 +42,18 @@ pub const Core = struct {
             .reader = reader,
             .writer = writer,
             .commands = commands,
-            .initialized = true,
-            .runner = undefined, // Will be set below
         };
 
-        instance.runner = cli.Runner{
+        const newRunner = cli.Runner{
             .core = instance,
             .initialized = true,
         };
+
+        instance.runner = newRunner;
         return instance;
     }
 
     pub fn deinit(self: *Core) void {
-        // No need to call runner.deinit() as it's an inline struct
         self.allocator.destroy(self);
     }
 

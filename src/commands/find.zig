@@ -16,7 +16,7 @@ pub const Command = cli.Command{
     .help =
     \\ find [args]
     \\
-    \\ Concurent search for files with names containing the specified pattern.
+    \\ Search for files with names containing the specified pattern.
     \\ If no path is provided, searches in the current directory.
     \\
     \\ Examples:
@@ -42,13 +42,6 @@ fn process(
     const allocator = runner.core.allocator;
 
     if (args.len < 1) {
-        try writer.print(
-            \\ Usage: find pattern [path]
-            \\  pattern: Text to search for in file names
-            \\  path: Directory to search in (defaults to current)
-        ,
-            .{},
-        );
         return FindError.PathNotFound;
     }
 
@@ -61,7 +54,13 @@ fn process(
     const arena_allocator = arena.allocator();
     const pattern_copy = try arena_allocator.dupe(u8, pattern);
 
-    try searchDirectoryRecursive(arena_allocator, root_path, pattern_copy, writer, 0);
+    try searchDirectoryRecursive(
+        arena_allocator,
+        root_path,
+        pattern_copy,
+        writer,
+        0,
+    );
 }
 
 // ----PRIVATE----
@@ -73,9 +72,14 @@ fn searchDirectoryRecursive(
     writer: cli.Writer,
     depth: usize,
 ) anyerror!void {
-    if (depth > 32) return;
+    if (depth > 32) {
+        return;
+    }
 
-    var dir = std.fs.cwd().openDir(dir_path, .{ .iterate = true }) catch |err| {
+    var dir = std.fs.cwd().openDir(
+        dir_path,
+        .{ .iterate = true },
+    ) catch |err| {
         switch (err) {
             error.FileNotFound => return FindError.PathNotFound,
             error.AccessDenied => return FindError.AccessDenied,
@@ -113,7 +117,13 @@ fn searchDirectoryRecursive(
 
             const new_path = try allocator.dupe(u8, path_buffer.items);
 
-            try searchDirectoryRecursive(allocator, new_path, pattern, writer, depth + 1);
+            try searchDirectoryRecursive(
+                allocator,
+                new_path,
+                pattern,
+                writer,
+                depth + 1,
+            );
         }
     }
 }

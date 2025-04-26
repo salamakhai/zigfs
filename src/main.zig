@@ -1,7 +1,7 @@
 const std = @import("std");
 const cli = @import("cli");
 
-const registry = @import("registry.zig");
+const registry = @import("commands/registry.zig");
 
 pub const ExitCode = enum(u8) {
     Success = 0,
@@ -14,21 +14,21 @@ pub const ExitCode = enum(u8) {
 
 /// Application entry
 pub fn main() !u8 {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var main_allocator = std.heap.DebugAllocator(.{}){};
     defer {
-        const leaked = gpa.deinit();
+        const leaked = main_allocator.deinit();
         if (leaked == .leak) {
             std.debug.print("Warning: Memory leaks detected\n", .{});
         }
     }
 
-    var arena = std.heap.ArenaAllocator.init(gpa.allocator());
+    var arena = std.heap.ArenaAllocator.init(main_allocator.allocator());
     defer arena.deinit();
 
     const allocator = arena.allocator();
     const stderr = std.io.getStdErr().writer();
 
-    // Create a mutable copy of the commands
+    // TODO: Decide on mulatbility of a references in structs
     const commands = try allocator.alloc(cli.Command, registry.commands.len);
     @memcpy(commands, registry.commands);
 
@@ -42,6 +42,7 @@ pub fn main() !u8 {
         commands,
     );
     defer core.deinit();
+
     core.processArgs(&args_iter) catch |err| {
         switch (err) {
             error.OutOfMemory => {

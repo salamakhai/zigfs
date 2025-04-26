@@ -1,9 +1,9 @@
 # Zig build artifacts
 .zig-cache/
-zig-out/
+# zig-out/
 
 # Binary output
-zigfs
+# zigfs
 
 # macOS specific
 .DS_Store
@@ -28,5 +28,5 @@ deps/
 .Spotlight-V100
 .Trashes
 
-test/
+# test/
 notes.md

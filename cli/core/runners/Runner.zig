@@ -79,18 +79,19 @@ pub const Runner = struct {
 
             // read input
             var input_buffer: [MAX_INPUT_LENGTH]u8 = undefined;
-            const input = reader.readUntilDelimiterOrEof(&input_buffer, '\n') catch |err| {
-                try writer.print("Error reading input: {s}\n", .{@errorName(err)});
-                continue;
-            } orelse {
-                isRunning = false;
-                break;
+            const input = reader.readUntilDelimiter(&input_buffer, '\n') catch |err| switch (err) {
+                error.EndOfStream => {
+                    isRunning = false;
+                    break;
+                },
+                else => |e| return e,
             };
 
             const trimmed_input = std.mem.trim(u8, input, &std.ascii.whitespace);
             if (trimmed_input.len == 0) {
                 continue;
             }
+
             // TODO: append state history
 
             var args_iter = std.mem.tokenizeAny(u8, trimmed_input, " \t");
@@ -123,8 +124,6 @@ pub const Runner = struct {
                 continue;
             }
         }
-
-        try writer.print("\nExiting interactive mode.\n", .{});
     }
 
     //

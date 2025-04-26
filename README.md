@@ -3,6 +3,15 @@
 A filesystem toolset written in Zig  
 [Github link](https://github.com/isalamaha/zigfs.git)
 
+
+### TEST: Binary and test image included
+
+```sh
+./zig-out/bin/zigfs mount test/ext4fs.img 
+```
+
+---  
+
 ## Building
 
 To build zigfs:
@@ -15,24 +24,6 @@ zig build
 
 # Run the executable
 ./zig-out/bin/zigfs
-```
-
-## Basic Usage
-
-```bash
-zigfs <command> [arguments]
-```
-
-For help with available commands:
-
-```bash
-zigfs help
-```
-
-For help with a specific command:
-
-```bash
-zigfs help <command>
 ```
 
 ## How to run globally
@@ -71,18 +62,42 @@ To verify:
 zigfs
 ```
 
+## Create ext4 fs for tests
+### MacOS
+
+```sh
+dd if=/dev/zero of=ext4.img bs=1M count=0 seek=64
+```
+
+Run Docker
+```sh
+docker run --rm -it -v $(pwd):/work -w /work ubuntu
+```
+
+```sh
+apt-get update && apt-get install -y e2fsprogs
+```
+
+```sh
+mkfs.ext4 ext4.img
+```
+
+```sh
+exit
+```
 
 
 ## TODOs and notes
-- [x] Multithreaded recursive files finder
+- [x] mount ls sub-command
+- [x] mount cut sub-command
+
+- [x] Recursive files finder
 - [x] FUSE research
-- [ ] Reader/Writer for runner interactive mode?
-- [ ] mount utilities
-- [x] Multi steps commands, chains 
+- [x] Reader/Writer for runner interactive mode?
+- [x] Multi steps commands, chains
 - [ ] Create tests for commands
-- [ ] cut command? Files reader
 - [x] loop for interactive (session) mode?
 - [ ] Progress indicators for long operations
 
-Ideas pool:
+?Ideas:
 - [ ] Extender of file's metadata: create tag system for files searching
