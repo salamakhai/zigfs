@@ -2,10 +2,19 @@ const std = @import("std");
 const cli = @import("cli");
 
 const Writer = cli.Writer;
-const Command = cli.Command;
 
-pub fn process(
-    self: *Command,
+pub const Command = cli.Command{
+    .name = cli.Core.HELP_COMMAND,
+    .description = "help or help [command]",
+    .help = undefined,
+    .process = process,
+};
+
+//
+// Private
+//
+fn process(
+    self: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,
     reader: cli.Reader,
@@ -33,7 +42,7 @@ pub fn process(
     try generalHelp(self, runner, writer);
 }
 
-fn generalHelp(self: *Command, runner: *cli.Runner, writer: cli.Writer) !void {
+fn generalHelp(self: *cli.Command, runner: *cli.Runner, writer: cli.Writer) !void {
     // General Help
     try writer.writeAll(
         \\Usage: zigfs command [args]

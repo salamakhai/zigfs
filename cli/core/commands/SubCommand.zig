@@ -5,9 +5,9 @@ pub const SubCommand = struct {
     description: []const u8,
     help: []const u8,
 
-    process: Processor,
+    process: SubProcessor,
 
-    pub const Processor = *const fn (
+    pub const SubProcessor = *const fn (
         self: *SubCommand,
         command: *cli.Command,
         args: []const []const u8,

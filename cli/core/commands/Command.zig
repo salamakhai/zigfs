@@ -9,7 +9,7 @@ pub const Command = struct {
     process: Processor,
 
     interactive: bool = false,
-    // TODO: add context
+    context: *anyopaque = undefined,
     subCommands: []cli.SubCommand = undefined,
 
     pub const Processor = *const fn (
@@ -31,4 +31,5 @@ pub const Command = struct {
 
     // PrintInfo
     // PrintUsage
+
 };

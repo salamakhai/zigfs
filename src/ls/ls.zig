@@ -8,13 +8,26 @@ pub const LsError = error{
     ReadDirError,
 };
 
-/// Main function to handle the ls command
-///
-/// Args:
-///   allocator: Memory allocator (unused)
-///   args: Command arguments (first arg is the path, defaults to current directory)
-///   writer: Output writer
-pub fn process(
+pub const Command = cli.Command{
+    .name = "ls",
+    .description = "ls [directory]",
+    .help =
+    \\ls [directory]
+    \\
+    \\Lists files and directories in the specified path.
+    \\If no path is provided, lists the current directory.
+    \\
+    \\Examples:
+    \\  ls             List current directory
+    \\  ls /some/path  List contents of /some/path
+    ,
+    .process = process,
+};
+
+//
+// Private
+//
+fn process(
     self: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,

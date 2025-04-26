@@ -10,13 +10,26 @@ pub const FindError = error{
     OutOfMemory,
 };
 
-/// Main function to handle the find command
-///
-/// Args:
-///   allocator: Memory allocator
-///   args: Command arguments ([pattern] [path])
-///   writer: Output writer
-pub fn process(
+pub const Command = cli.Command{
+    .name = "find",
+    .description = "find [pattern]",
+    .help =
+    \\ find [args]
+    \\
+    \\ Concurent search for files with names containing the specified pattern.
+    \\ If no path is provided, searches in the current directory.
+    \\
+    \\ Examples:
+    \\ find test       Find files containing 'test' in current directory
+    \\ find .txt /test Find .txt files in /test directory
+    ,
+    .process = process,
+};
+
+//
+// Private
+//
+fn process(
     self: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,

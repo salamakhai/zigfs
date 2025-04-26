@@ -1,12 +1,38 @@
 const std = @import("std");
 const cli = @import("cli");
-const Image = @import("data/Image.zig").Image;
-const ImageError = @import("data/Image.zig").ImageError;
 const Allocator = std.mem.Allocator;
 const fs = std.fs;
 
-pub fn process(
-    _: *cli.Command,
+var subCommands = [_]cli.SubCommand{
+    @import("sub-commands/info.zig").SubCommand,
+};
+
+pub const Image = @import("data/Image.zig").Image;
+pub const ImageError = @import("data/Image.zig").ImageError;
+
+pub const Command = cli.Command{
+    .name = "browse",
+    .description = "browse [image]",
+    .help =
+    \\browse [directory]
+    \\
+    \\
+    \\
+    \\
+    \\Examples:
+    \\  
+    \\  
+    ,
+    .process = process,
+    .interactive = true,
+    .subCommands = &subCommands,
+};
+
+//
+// Private
+//
+fn process(
+    self: *cli.Command,
     runner: *cli.Runner,
     args: []const []const u8,
     reader: cli.Reader,
@@ -42,7 +68,7 @@ pub fn process(
     errdefer file.close();
 
     // Process the ext4 image
-    const mounted_image = Image.open(runner.core.allocator, file) catch |err| {
+    const opened_image = Image.open(runner.core.allocator, file) catch |err| {
         switch (err) {
             ImageError.InvalidMagicNumber, ImageError.NotExt4Format => {
                 try writer.print("Error: Not a valid ext4 filesystem: {s}\n", .{image_path});
@@ -63,5 +89,5 @@ pub fn process(
         }
     };
 
-    _ = mounted_image;
+    self.context = opened_image;
 }
