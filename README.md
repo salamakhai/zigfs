@@ -14,15 +14,18 @@ A filesystem toolset written in Zig
 
 ## Building
 
-To build zigfs:
-
-```bash
+```sh
 cd zigfs
-
-# Build using zig
+```  
+```sh
 zig build
-
-# Run the executable
+```
+**Ensure the binary is executable**  
+```sh
+chmod +x zig-out/bin/zigfs
+```
+**Run the executable**  
+```sh
 ./zig-out/bin/zigfs
 ```
 
@@ -30,37 +33,33 @@ zig build
 
 ### Create a symbolic link (one of solutions)
 
-Link the compiled `zigfs` binary to a directory that is already in `$PATH`, such as `/usr/local/bin`.
-Note: Run commands from the project folder
+Link the compiled `zigfs` binary to a directory that is already in `$PATH`, such as `/usr/local/bin`.  
+Note: Run commands from the project folder  
 
-Run build to create binary:
+**Run build to create binary**
 ```sh
 zig build
-```
-
-Ensure the binary is executable:
-
+```  
+**Ensure the binary is executable**
 ```sh
 chmod +x zig-out/bin/zigfs
-```
-
-Create symlink to the binary:
-
+```  
+**Create symlink to the binary**
 ```sh
 sudo ln -s "$(pwd)/zig-out/bin/zigfs" /usr/local/bin/zigfs
-```
+```  
+**Verify**
+```sh
+zigfs
+```  
 
-To remove symlink later:
-
+---
+  
+_To remove symlink later:_
 ```sh
 sudo rm /usr/local/bin/zigfs
 ```
 
-To verify:
-
-```sh
-zigfs
-```
 
 ## Create ext4 fs for tests
 ### MacOS
@@ -85,6 +84,9 @@ docker run --rm -it -v $(pwd):/work -w /work ubuntu
 ```sh
 >>> exit
 ```
+  
+  
+  
 
 
 ## TODOs and notes
@@ -92,8 +94,10 @@ docker run --rm -it -v $(pwd):/work -w /work ubuntu
 - [ ] mount cut sub-command
 - [ ] Create tests for commands
 - [ ] Progress indicators for long operations  
+  
+---  
 
-
+  
 - [x] Recursive files finder
 - [x] FUSE research
 - [x] Reader/Writer for runner interactive mode?
