@@ -91,7 +91,8 @@ docker run --rm -it -v $(pwd):/work -w /work ubuntu
 - [ ] mount ls sub-command
 - [ ] mount cut sub-command
 - [ ] Create tests for commands
-- [ ] Progress indicators for long operations
+- [ ] Progress indicators for long operations  
+
 
 - [x] Recursive files finder
 - [x] FUSE research
