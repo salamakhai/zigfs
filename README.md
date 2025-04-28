@@ -75,29 +75,29 @@ docker run --rm -it -v $(pwd):/work -w /work ubuntu
 ```
 
 ```sh
-apt-get update && apt-get install -y e2fsprogs
+>>> apt-get update && apt-get install -y e2fsprogs
 ```
 
 ```sh
-mkfs.ext4 ext4.img
+>>> mkfs.ext4 ext4.img
 ```
 
 ```sh
-exit
+>>> exit
 ```
 
 
 ## TODOs and notes
-- [x] mount ls sub-command
-- [x] mount cut sub-command
+- [ ] mount ls sub-command
+- [ ] mount cut sub-command
+- [ ] Create tests for commands
+- [ ] Progress indicators for long operations
 
 - [x] Recursive files finder
 - [x] FUSE research
 - [x] Reader/Writer for runner interactive mode?
 - [x] Multi steps commands, chains
-- [ ] Create tests for commands
 - [x] loop for interactive (session) mode?
-- [ ] Progress indicators for long operations
 
 ?Ideas:
 - [ ] Extender of file's metadata: create tag system for files searching
