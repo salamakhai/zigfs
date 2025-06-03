@@ -36,9 +36,6 @@ pub const Superblock = packed struct {
     s_max_mnt_count: i16, // 0x36-0x37
     s_magic: u16, // 0x38-0x39 (Should be EXT4_SUPER_MAGIC 0xEF53)
 
-    //
-    // Lifecycle
-    //
     pub fn fromFile(file: std.fs.File) anyerror!Superblock {
         try file.seekTo(SUPERBLOCK_OFFSET);
 

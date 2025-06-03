@@ -90,6 +90,7 @@ docker run --rm -it -v $(pwd):/work -w /work ubuntu
 
 
 ## TODOs and notes
+- [ ] file system module
 - [ ] mount ls sub-command
 - [ ] mount cut sub-command
 - [ ] Create tests for commands

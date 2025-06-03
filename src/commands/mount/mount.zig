@@ -1,5 +1,7 @@
 const std = @import("std");
 const cli = @import("cli");
+const efs = @import("efs");
+
 const Allocator = std.mem.Allocator;
 const fs = std.fs;
 
@@ -8,8 +10,8 @@ var subCommands = [_]cli.SubCommand{
     @import("sub-commands/info.zig").SubCommand,
 };
 
-pub const FileSystem = @import("fs/FileSystem.zig").FileSystem;
-pub const FileSystemError = @import("fs/FileSystem.zig").FileSystemError;
+pub const FileSystem = efs.FileSystem;
+pub const FileSystemError = efs.FileSystemError;
 
 pub const Command = cli.Command{
     .name = "mount",

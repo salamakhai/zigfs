@@ -22,6 +22,15 @@ pub fn build(b: *std.Build) void {
     // circular
     cli_module.addImport("cli", cli_module);
 
+    // ---FS---
+    const efs_module = b.createModule(.{
+        .root_source_file = b.path("src/efs/efs.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    efs_module.addImport("efs", efs_module);
+
     // -----------------
 
     const exe = b.addExecutable(.{
@@ -33,6 +42,7 @@ pub fn build(b: *std.Build) void {
 
     // Dependecies
     exe.root_module.addImport("cli", cli_module);
+    exe.root_module.addImport("efs", efs_module);
 
     b.installArtifact(exe);
 

@@ -37,6 +37,7 @@ pub const Core = struct {
         commands: []cli.Command,
     ) !*Core {
         var instance = try allocator.create(Core);
+
         instance.* = Core{
             .allocator = allocator,
             .reader = reader,
