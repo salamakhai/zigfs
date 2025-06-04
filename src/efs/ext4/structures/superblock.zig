@@ -1,4 +1,5 @@
 const std = @import("std");
+const errors = @import("../../errors.zig");
 
 pub const EXT4_SUPER_MAGIC: u16 = 0xEF53;
 pub const SUPERBLOCK_OFFSET: u64 = 1024;
@@ -35,6 +36,13 @@ pub const Superblock = packed struct {
     s_mnt_count: u16, // 0x34-0x35
     s_max_mnt_count: i16, // 0x36-0x37
     s_magic: u16, // 0x38-0x39 (Should be EXT4_SUPER_MAGIC 0xEF53)
+    s_state: u16, // 0x3A-0x3B
+    s_errors: u16, // 0x3C-0x3D
+    s_minor_rev_level: u16, // 0x3E-0x3F
+    s_lastcheck: u32, // 0x40-0x43
+    s_checkinterval: u32, // 0x44-0x47
+    s_creator_os: u32, // 0x48-0x4B
+    s_rev_level: u32, // 0x4C-0x4F
 
     pub fn fromFile(file: std.fs.File) anyerror!Superblock {
         try file.seekTo(SUPERBLOCK_OFFSET);
@@ -57,7 +65,10 @@ pub const Superblock = packed struct {
     }
 
     /// Validates that this is a valid ext4 superblock
-    pub fn validate(self: *const Superblock, writer: anytype) (SuperblockError || @TypeOf(writer).Error)!void {
+    pub fn validate(
+        self: *const Superblock,
+        writer: anytype,
+    ) (SuperblockError || @TypeOf(writer).Error)!void {
         try writer.print("Validating superblock...\n", .{});
 
         // Check magic number (handling potential endianness issues)

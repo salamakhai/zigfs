@@ -24,12 +24,10 @@ pub fn build(b: *std.Build) void {
 
     // ---FS---
     const efs_module = b.createModule(.{
-        .root_source_file = b.path("src/efs/efs.zig"),
+        .root_source_file = b.path("src/efs/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-
-    efs_module.addImport("efs", efs_module);
 
     // -----------------
 

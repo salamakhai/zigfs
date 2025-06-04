@@ -10,7 +10,7 @@ var subCommands = [_]cli.SubCommand{
     @import("sub-commands/info.zig").SubCommand,
 };
 
-pub const FileSystem = efs.FileSystem;
+pub const FileSystemImpl = efs.FileSystemImpl;
 pub const FileSystemError = efs.FileSystemError;
 
 pub const Command = cli.Command{
@@ -60,7 +60,7 @@ fn process(
     };
     errdefer file.close();
 
-    const mounted_fs = FileSystem.init(
+    var mounted_fs = FileSystemImpl.fromFile(
         runner.core.allocator,
         file,
     ) catch |err| {
@@ -68,9 +68,20 @@ fn process(
         return err;
     };
 
-    try writer.print("\n", .{});
-    try mounted_fs.superblock.validate(writer);
+    try writer.print("Filesystem detected and mounted successfully\n", .{});
+
+    // Test reading root entry
+    const root_entry = mounted_fs.getRootEntry(runner.core.allocator) catch |err| {
+        try writer.print("Failed to read root entry: {!}\n", .{err});
+        return err;
+    };
+
+    try writer.print("Root entry info:\n", .{});
+    try writer.print("  Name: {s}\n", .{root_entry.name});
+    try writer.print("  Type: {s}\n", .{@tagName(root_entry.entry_type)});
+    try writer.print("  Mode: 0x{X:0>4}\n", .{root_entry.mode});
+    try writer.print("  Size: {} bytes\n", .{root_entry.size});
     try writer.print("\n", .{});
 
-    self.context = mounted_fs;
+    self.context = &mounted_fs;
 }
