@@ -11,7 +11,6 @@ pub const Action = struct {
     help: *const fn (*const Action) []const u8 = defaultHelp,
     interactive: bool = false,
     context: ?*anyopaque = null,
-    parent: ?*Action = null,
     children: []const *const Action = &[_]*const Action{},
 
     process: *const fn (*Action, *Core, []const []const u8, Reader, Writer) anyerror!void,
