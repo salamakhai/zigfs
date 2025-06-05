@@ -1,23 +1,24 @@
 const std = @import("std");
 
-const Core = @import("core.zig").Core;
-const SubAction = @import("sub_action.zig").SubAction;
 const Reader = std.io.AnyReader;
 const Writer = std.io.AnyWriter;
+
+const Core = @import("core.zig").Core;
 
 pub const Action = struct {
     name: []const u8,
     description: []const u8 = "",
-    help: []const u8 = "",
+    help: *const fn (*const Action) []const u8 = defaultHelp,
     interactive: bool = false,
     context: ?*anyopaque = null,
-    sub_actions: []const SubAction = &[_]SubAction{},
+    parent: ?*Action = null,
+    children: []const *const Action = &[_]*const Action{},
 
     process: *const fn (*Action, *Core, []const []const u8, Reader, Writer) anyerror!void,
 
-    pub fn findSubAction(self: *const Action, name: []const u8) ?*const SubAction {
-        for (self.sub_actions) |*sub| {
-            if (std.mem.eql(u8, sub.name, name)) return sub;
+    pub fn findChild(self: *const Action, name: []const u8) ?*const Action {
+        for (self.children) |child| {
+            if (std.mem.eql(u8, child.name, name)) return child;
         }
         return null;
     }
@@ -26,14 +27,20 @@ pub const Action = struct {
         try writer.print("Usage: {s}\n", .{self.name});
         try writer.print("  {s}\n\n", .{self.description});
 
-        if (self.sub_actions.len > 0) {
-            try writer.print("Sub-actions:\n", .{});
-            for (self.sub_actions) |sub| {
-                try writer.print("  {s:<12} {s}\n", .{ sub.name, sub.description });
+        if (self.children.len > 0) {
+            try writer.print("Available commands:\n", .{});
+            for (self.children) |child| {
+                try writer.print("  {s:<12} {s}\n", .{ child.name, child.description });
             }
             try writer.print("\n", .{});
         }
 
-        try writer.print("{s}\n", .{self.help});
+        const help_text = self.help(self);
+        try writer.print("{s}\n", .{help_text});
+    }
+
+    fn defaultHelp(self: *const Action) []const u8 {
+        _ = self;
+        return "";
     }
 };

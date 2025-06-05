@@ -85,10 +85,14 @@ pub const Core = struct {
             };
 
             const trimmed = std.mem.trim(u8, input, &std.ascii.whitespace);
-            if (trimmed.len == 0) continue;
+            if (trimmed.len == 0) {
+                continue;
+            }
 
             var args_iter = std.mem.tokenizeAny(u8, trimmed, " \t");
-            const sub_name = args_iter.next() orelse continue;
+            const sub_name = args_iter.next() orelse {
+                continue;
+            };
 
             if (std.mem.eql(u8, sub_name, "exit")) {
                 running = false;
@@ -96,20 +100,37 @@ pub const Core = struct {
             }
 
             if (std.mem.eql(u8, sub_name, "help")) {
-                try action.printUsage(self.writer);
+                const help_target = args_iter.next();
+                if (help_target) |target| {
+                    if (action.findChild(target)) |child_action| {
+                        // Create a mutable copy with parent set for context-dependent help
+                        var mutable_child = child_action.*;
+                        mutable_child.parent = action;
+                        try mutable_child.printUsage(self.writer);
+                    } else {
+                        try self.writer.print("Unknown command: {s}\n", .{target});
+                    }
+                } else {
+                    try action.printUsage(self.writer);
+                }
                 continue;
             }
 
-            if (action.findSubAction(sub_name)) |sub_action| {
-                var sub_args = std.ArrayList([]const u8).init(self.allocator);
-                defer sub_args.deinit();
+            if (action.findChild(sub_name)) |child_action| {
+                var child_args = std.ArrayList([]const u8).init(self.allocator);
+                defer child_args.deinit();
 
                 while (args_iter.next()) |arg| {
-                    try sub_args.append(arg);
+                    try child_args.append(arg);
                 }
 
-                sub_action.process(sub_action, action, sub_args.items, self.reader, self.writer) catch |err| {
-                    try self.writer.print("Error executing '{s}': {s}\n", .{ sub_action.name, @errorName(err) });
+                // Create a mutable copy to inherit context and parent from parent action
+                var mutable_child = child_action.*;
+                mutable_child.context = action.context;
+                mutable_child.parent = action;
+
+                mutable_child.process(&mutable_child, self, child_args.items, self.reader, self.writer) catch |err| {
+                    try self.writer.print("Error executing '{s}': {s}\n", .{ child_action.name, @errorName(err) });
                 };
             } else {
                 try self.writer.print("Unknown command: {s}. Type 'help' for available commands.\n", .{sub_name});

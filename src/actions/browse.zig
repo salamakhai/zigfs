@@ -2,31 +2,37 @@ const std = @import("std");
 const cli = @import("cli");
 const efs = @import("efs");
 
-const sub_actions = [_]cli.SubAction{
-    @import("sub_actions/info.zig").SUB_ACTION,
+const child_actions = [_]*const cli.Action{
+    &@import("fs_info.zig").ACTION,
 };
 
 pub const ACTION = cli.Action{
     .name = "browse",
     .description = "Browse filesystem images interactively",
-    .help =
-    \\Usage: zigfs browse <image_file>
+    .help = getHelp,
+    .process = process,
+    .interactive = true,
+    .children = &child_actions,
+};
+
+fn getHelp(self: *const cli.Action) []const u8 {
+    _ = self;
+    return 
+    \\Usage: browse <image_file>
     \\
+    \\Mount and interactively browse a filesystem image.
     \\
     \\Examples:
-    \\  zigfs browse disk.img
+    \\  browse disk.img       - Mount and browse disk.img
     \\
-    \\Available commands:
+    \\Interactive commands:
     \\  info - Show filesystem information
-    \\  ls   - List directory contents
+    \\  ls   - List directory contents  
     \\  cd   - Change directory
     \\  help - Show available commands
     \\  exit - Exit browse mode
-    ,
-    .process = process,
-    .interactive = true,
-    .sub_actions = &sub_actions,
-};
+    ;
+}
 
 fn process(
     self: *cli.Action,
