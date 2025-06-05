@@ -62,7 +62,7 @@ pub const FileSystemImpl = union(enum) {
 ///
 /// | Filesystem | Magic      | Offset   | Size    |
 /// |------------|------------|----------|---------|
-/// | ext2/3/4   | 0xEF53     | 1024+56  | 2 bytes | superblock offset + magic offset (for 2/3/4 detection?)
+/// | ext2/3/4   | 0xEF53     | 1024+56  | 2 bytes | superblock offset + magic offset
 /// | NTFS       | "NTFS    " | 3        | 8 bytes |
 /// | FAT32      | 0x28/0x29  | 66/82    | 1 byte  |
 ///

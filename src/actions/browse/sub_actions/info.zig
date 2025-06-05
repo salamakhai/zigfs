@@ -1,32 +1,36 @@
 const std = @import("std");
 const cli = @import("cli");
+const efs = @import("efs");
 
-const mount = @import("../mount.zig");
-
-pub const LsError = error{};
-
-pub const SubCommand = cli.SubCommand{
+pub const SUB_ACTION = cli.SubAction{
     .name = "info",
-    .description = "info",
+    .description = "Show filesystem information",
     .help =
+    \\Usage: info
     \\
-    \\
+    \\Display detailed information about the mounted filesystem,
+    \\including type, block size, and usage statistics.
     ,
-    .process = subProcess,
+    .process = process,
 };
 
-pub fn subProcess(
-    self: *cli.SubCommand,
-    command: *cli.Command,
+fn process(
+    self: *const cli.SubAction,
+    action: *cli.Action,
     args: []const []const u8,
     reader: cli.Reader,
     writer: cli.Writer,
 ) anyerror!void {
     _ = self;
+    _ = args;
     _ = reader;
 
-    const context = command.context;
-    const context_fs = @as(*mount.FileSystemImpl, @ptrCast(@alignCast(context)));
+    const context = action.context orelse {
+        try writer.print("Error: No filesystem mounted\n", .{});
+        return;
+    };
+
+    const context_fs = @as(*efs.FileSystemImpl, @ptrCast(@alignCast(context)));
 
     try writer.print("Filesystem information:\n", .{});
     switch (context_fs.*) {
@@ -39,6 +43,4 @@ pub fn subProcess(
             try writer.print("  Free inodes: {}\n", .{fs.superblock.s_free_inodes_count});
         },
     }
-
-    _ = args;
 }

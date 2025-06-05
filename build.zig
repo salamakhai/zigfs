@@ -15,12 +15,10 @@ pub fn build(b: *std.Build) void {
 
     // ---CLI---
     const cli_module = b.createModule(.{
-        .root_source_file = b.path("cli/cli.zig"),
+        .root_source_file = b.path("src/cli/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-    // circular
-    cli_module.addImport("cli", cli_module);
 
     // ---FS---
     const efs_module = b.createModule(.{

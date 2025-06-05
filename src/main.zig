@@ -1,7 +1,7 @@
 const std = @import("std");
 const cli = @import("cli");
 
-const registry = @import("commands/registry.zig");
+const action_registry = @import("actions/root.zig");
 
 pub const ExitCode = enum(u8) {
     Success = 0,
@@ -28,9 +28,9 @@ pub fn main() !u8 {
     const allocator = arena.allocator();
     const stderr = std.io.getStdErr().writer();
 
-    // TODO: Decide on mulatbility of a references in structs
-    const commands = try allocator.alloc(cli.Command, registry.commands.len);
-    @memcpy(commands, registry.commands);
+    // TODO: Decide on mutability of references in structs
+    const actions = try allocator.alloc(cli.Action, action_registry.actions.len);
+    @memcpy(actions, action_registry.actions);
 
     var args_iter = try std.process.argsWithAllocator(allocator);
     defer args_iter.deinit();
@@ -39,7 +39,7 @@ pub fn main() !u8 {
         allocator,
         std.io.getStdIn().reader().any(),
         std.io.getStdOut().writer().any(),
-        commands,
+        actions,
     );
     defer core.deinit();
 
