@@ -103,10 +103,7 @@ pub const Core = struct {
                 const help_target = args_iter.next();
                 if (help_target) |target| {
                     if (action.findChild(target)) |child_action| {
-                        // Create a mutable copy with parent set for context-dependent help
-                        var mutable_child = child_action.*;
-                        mutable_child.parent = action;
-                        try mutable_child.printUsage(self.writer);
+                        try child_action.printUsage(self.writer);
                     } else {
                         try self.writer.print("Unknown command: {s}\n", .{target});
                     }
@@ -124,10 +121,9 @@ pub const Core = struct {
                     try child_args.append(arg);
                 }
 
-                // Create a mutable copy to inherit context and parent from parent action
+                // Create a mutable copy to inherit context from parent action
                 var mutable_child = child_action.*;
                 mutable_child.context = action.context;
-                mutable_child.parent = action;
 
                 mutable_child.process(&mutable_child, self, child_args.items, self.reader, self.writer) catch |err| {
                     try self.writer.print("Error executing '{s}': {s}\n", .{ child_action.name, @errorName(err) });

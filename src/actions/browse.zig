@@ -4,12 +4,13 @@ const efs = @import("efs");
 
 const child_actions = [_]*const cli.Action{
     &@import("fs_info.zig").ACTION,
+    &@import("fs_ls.zig").ACTION,
 };
 
 pub const ACTION = cli.Action{
     .name = "browse",
     .description = "Browse filesystem images interactively",
-    .help = getHelp,
+    .generalHelp = getHelp,
     .process = process,
     .interactive = true,
     .children = &child_actions,

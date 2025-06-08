@@ -5,20 +5,18 @@ const efs = @import("efs");
 pub const ACTION = cli.Action{
     .name = "info",
     .description = "Show filesystem information",
-    .help = getHelp,
+    .generalHelp = getGeneralHelp,
     .process = process,
 };
 
-fn getHelp(self: *const cli.Action) []const u8 {
-    if (self.parent != null) {
-        // Interactive mode help (when used within browse)
+fn getGeneralHelp(self: *const cli.Action) []const u8 {
+    if (self.context != null) {
         return 
         \\Usage: info
         \\
         \\Display detailed information about the currently mounted filesystem.
         ;
     } else {
-        // Standalone mode help
         return 
         \\Usage: info <image_file>
         \\

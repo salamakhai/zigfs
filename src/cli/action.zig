@@ -8,7 +8,7 @@ const Core = @import("core.zig").Core;
 pub const Action = struct {
     name: []const u8,
     description: []const u8 = "",
-    help: *const fn (*const Action) []const u8 = defaultHelp,
+    generalHelp: *const fn (*const Action) []const u8 = defaultHelp,
     interactive: bool = false,
     context: ?*anyopaque = null,
     children: []const *const Action = &[_]*const Action{},
@@ -34,7 +34,7 @@ pub const Action = struct {
             try writer.print("\n", .{});
         }
 
-        const help_text = self.help(self);
+        const help_text = self.generalHelp(self);
         try writer.print("{s}\n", .{help_text});
     }
 
