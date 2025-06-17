@@ -1,6 +1,6 @@
 const std = @import("std");
 const cli = @import("cli");
-const efs = @import("efs");
+const fslib = @import("fslib");
 
 pub const ACTION = cli.Action{
     .name = "info",
@@ -37,11 +37,11 @@ fn process(
 ) anyerror!void {
     _ = reader;
 
-    var context_fs: *efs.FileSystemImpl = undefined;
+    var context_fs: *fslib.FileSystemImpl = undefined;
     var should_cleanup = false;
 
     if (self.context) |context| {
-        context_fs = @as(*efs.FileSystemImpl, @ptrCast(@alignCast(context)));
+        context_fs = @as(*fslib.FileSystemImpl, @ptrCast(@alignCast(context)));
     } else {
         if (args.len == 0) {
             try writer.print("Error: No filesystem mounted and no image file specified\n", .{});
@@ -63,7 +63,7 @@ fn process(
         };
 
         // Create and mount filesystem
-        const mounted_fs = core.allocator.create(efs.FileSystemImpl) catch |err| {
+        const mounted_fs = core.allocator.create(fslib.FileSystemImpl) catch |err| {
             try writer.print("Memory allocation error: {!}\n", .{err});
             return;
         };
@@ -71,7 +71,7 @@ fn process(
             core.allocator.destroy(mounted_fs);
         };
 
-        mounted_fs.* = efs.FileSystemImpl.fromFile(
+        mounted_fs.* = fslib.FileSystemImpl.fromFile(
             core.allocator,
             file,
         ) catch |err| {
@@ -87,7 +87,7 @@ fn process(
     try showFilesystemInfo(context_fs, writer);
 }
 
-fn showFilesystemInfo(fs: *efs.FileSystemImpl, writer: cli.Writer) !void {
+fn showFilesystemInfo(fs: *fslib.FileSystemImpl, writer: cli.Writer) !void {
     try writer.print("Filesystem information:\n", .{});
     switch (fs.*) {
         .ext4 => |filesystem| {

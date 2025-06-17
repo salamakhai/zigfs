@@ -13,7 +13,7 @@ pub const CoreError = error{
     EndOfStream,
 };
 
-const DEFAULT_PROMPT = ">>> ";
+const DEFAULT_PROMPT = " > ";
 const MAX_INPUT_LENGTH = 1024;
 
 pub const Core = struct {
@@ -22,6 +22,7 @@ pub const Core = struct {
     allocator: std.mem.Allocator,
     reader: Reader,
     writer: Writer,
+
     actions: []Action,
 
     pub fn init(

@@ -1,6 +1,6 @@
 const std = @import("std");
 const cli = @import("cli");
-const efs = @import("efs");
+const fslib = @import("fslib");
 
 pub const ACTION = cli.Action{
     .name = "ls",
@@ -38,7 +38,7 @@ fn process(
         return;
     }
 
-    const mounted_fs = @as(*efs.FileSystemImpl, @ptrCast(@alignCast(self.context.?)));
+    const mounted_fs = @as(*fslib.FileSystemImpl, @ptrCast(@alignCast(self.context.?)));
 
     // Determine path to list
     const path = if (args.len > 0) args[0] else "/";

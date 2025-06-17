@@ -11,12 +11,12 @@ pub const Action = struct {
     generalHelp: *const fn (*const Action) []const u8 = defaultHelp,
     interactive: bool = false,
     context: ?*anyopaque = null,
-    children: []const *const Action = &[_]*const Action{},
+    sub_actions: []const *const Action = &[_]*const Action{},
 
     process: *const fn (*Action, *Core, []const []const u8, Reader, Writer) anyerror!void,
 
     pub fn findChild(self: *const Action, name: []const u8) ?*const Action {
-        for (self.children) |child| {
+        for (self.sub_actions) |child| {
             if (std.mem.eql(u8, child.name, name)) return child;
         }
         return null;
@@ -26,9 +26,9 @@ pub const Action = struct {
         try writer.print("Usage: {s}\n", .{self.name});
         try writer.print("  {s}\n\n", .{self.description});
 
-        if (self.children.len > 0) {
+        if (self.sub_actions.len > 0) {
             try writer.print("Available commands:\n", .{});
-            for (self.children) |child| {
+            for (self.sub_actions) |child| {
                 try writer.print("  {s:<12} {s}\n", .{ child.name, child.description });
             }
             try writer.print("\n", .{});

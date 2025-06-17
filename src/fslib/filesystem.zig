@@ -1,21 +1,26 @@
 const std = @import("std");
 const Entry = @import("entry.zig").Entry;
-const Ext4FileSystem = @import("ext4/ext4_filesystem.zig").Ext4FileSystem;
 const errors = @import("errors.zig");
 
+const Ext4FS = @import("ext4/ext4_fs.zig").Ext4FS;
+
 pub const FileSystemImpl = union(enum) {
-    ext4: *Ext4FileSystem,
+    ext4: *Ext4FS,
 
     pub fn fromFile(allocator: std.mem.Allocator, file: std.fs.File) !FileSystemImpl {
-        // Try to detect ext4
+        // Try to detect magic number to determine filesystem type
         const magic = try detectMagic(file);
 
         switch (magic) {
             0xEF53 => {
-                const ext4_fs = try Ext4FileSystem.init(allocator, file);
-                return .{ .ext4 = ext4_fs };
+                const ext4_fs = try Ext4FS.init(allocator, file);
+                return .{
+                    .ext4 = ext4_fs,
+                };
             },
-            else => return errors.FileSystemError.UnsupportedFormat,
+            else => {
+                return errors.FileSystemError.UnsupportedFormat;
+            },
         }
     }
 

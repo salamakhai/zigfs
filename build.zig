@@ -20,9 +20,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // ---FS---
-    const efs_module = b.createModule(.{
-        .root_source_file = b.path("src/efs/root.zig"),
+    // ---FSLIB---
+    const fslib_module = b.createModule(.{
+        .root_source_file = b.path("src/fslib/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -38,7 +38,7 @@ pub fn build(b: *std.Build) void {
 
     // Dependecies
     exe.root_module.addImport("cli", cli_module);
-    exe.root_module.addImport("efs", efs_module);
+    exe.root_module.addImport("fslib", fslib_module);
 
     b.installArtifact(exe);
 

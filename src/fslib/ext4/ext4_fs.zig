@@ -1,6 +1,5 @@
 const std = @import("std");
 const fs = std.fs;
-const io = std.io;
 const mem = std.mem;
 const Allocator = std.mem.Allocator;
 const print = std.debug.print;
@@ -11,12 +10,11 @@ const BlockGroup = @import("structures/block_group.zig").BlockGroup;
 const Ext4DirEntry = @import("structures/dir_entry.zig").Ext4DirEntry;
 const ExtentHeader = @import("structures/extent.zig").ExtentHeader;
 const Extent = @import("structures/extent.zig").Extent;
-const EXT4_EXTENTS_FL = @import("structures/extent.zig").EXT4_EXTENTS_FL;
 const Entry = @import("../entry.zig").Entry;
 const EntryType = @import("../entry.zig").EntryType;
 const errors = @import("../errors.zig");
 
-pub const Ext4FileSystem = struct {
+pub const Ext4FS = struct {
     file: fs.File,
     superblock: Superblock,
     allocator: Allocator,
@@ -25,11 +23,11 @@ pub const Ext4FileSystem = struct {
     pub fn init(
         allocator: Allocator,
         file: fs.File,
-    ) !*Ext4FileSystem {
+    ) !*Ext4FS {
         var superblock = try Superblock.fromFile(file);
 
-        const image = try allocator.create(Ext4FileSystem);
-        image.* = Ext4FileSystem{
+        const image = try allocator.create(Ext4FS);
+        image.* = Ext4FS{
             .file = file,
             .superblock = superblock,
             .allocator = allocator,
@@ -39,12 +37,12 @@ pub const Ext4FileSystem = struct {
         return image;
     }
 
-    pub fn deinit(self: *Ext4FileSystem) void {
+    pub fn deinit(self: *Ext4FS) void {
         self.file.close();
         self.allocator.destroy(self);
     }
 
-    pub fn readInode(self: *Ext4FileSystem, inode_number: u32) !Inode {
+    pub fn readInode(self: *Ext4FS, inode_number: u32) !Inode {
         if (inode_number == 0) {
             return errors.FileSystemError.ReadError; // Inode 0 is invalid
         }
@@ -53,7 +51,7 @@ pub const Ext4FileSystem = struct {
         const group_number = (inode_number - 1) / self.superblock.s_inodes_per_group;
         const inode_index = (inode_number - 1) % self.superblock.s_inodes_per_group;
 
-        // Read block group descriptor (BGD starts after superblock)
+        // Read block group descriptor (starts after superblock)
         const bgd_table_block = if (self.block_size == 1024) @as(u64, 2) else @as(u64, 1);
         const bgd_offset = (bgd_table_block * self.block_size) + (group_number * @sizeOf(BlockGroup));
         try self.file.seekTo(bgd_offset);
@@ -80,11 +78,12 @@ pub const Ext4FileSystem = struct {
         return inode;
     }
 
-    pub fn getRootInode(self: *Ext4FileSystem) !Inode {
-        return self.readInode(2); // Root directory is always inode 2 in ext4
+    pub fn getRootInode(self: *Ext4FS) !Inode {
+        // Root directory is always inode 2 in ext4
+        return self.readInode(2);
     }
 
-    pub fn getRootEntry(self: *Ext4FileSystem, allocator: Allocator) !Entry {
+    pub fn getRootEntry(self: *Ext4FS, allocator: Allocator) !Entry {
         _ = allocator; // Will use for name allocation later
         const root_inode = try self.getRootInode();
 
@@ -96,47 +95,22 @@ pub const Ext4FileSystem = struct {
         };
     }
 
-    /// Read data blocks from an inode (handles both direct blocks and extents)
-    pub fn readInodeData(self: *Ext4FileSystem, allocator: Allocator, inode: *const Inode) ![]u8 {
+    /// Read data blocks from an inode
+    pub fn readInodeData(self: *Ext4FS, allocator: Allocator, inode: *const Inode) ![]u8 {
         const file_size = inode.size();
 
         if (file_size == 0) {
             return try allocator.alloc(u8, 0);
         }
 
-        var data = try allocator.alloc(u8, @intCast(file_size));
-
-        if (inode.i_flags & EXT4_EXTENTS_FL != 0) {
-            // Handle extent-based storage
-            try self.readExtentData(data, inode);
-        } else {
-            // Handle direct/indirect blocks (legacy format)
-            var bytes_read: usize = 0;
-
-            for (inode.i_block[0..12]) |block_num| {
-                if (block_num == 0) break; // No more blocks
-
-                const block_offset = @as(u64, block_num) * self.block_size;
-                try self.file.seekTo(block_offset);
-
-                const bytes_to_read = @min(self.block_size, @as(u32, @intCast(file_size - bytes_read)));
-                const read_bytes = try self.file.read(data[bytes_read .. bytes_read + bytes_to_read]);
-
-                if (read_bytes != bytes_to_read) {
-                    allocator.free(data);
-                    return errors.FileSystemError.ReadError;
-                }
-
-                bytes_read += read_bytes;
-                if (bytes_read >= file_size) break;
-            }
-        }
+        const data = try allocator.alloc(u8, @intCast(file_size));
+        try self.readExtentData(data, inode);
 
         return data;
     }
 
     /// Read data using extent tree
-    fn readExtentData(self: *Ext4FileSystem, data: []u8, inode: *const Inode) !void {
+    fn readExtentData(self: *Ext4FS, data: []u8, inode: *const Inode) !void {
         // The extent tree root is stored in i_block
         const extent_data = std.mem.asBytes(&inode.i_block);
         const header = @as(*const ExtentHeader, @ptrCast(@alignCast(extent_data.ptr)));
@@ -173,13 +147,12 @@ pub const Ext4FileSystem = struct {
                 }
             }
         } else {
-            // This is an internal node - would need to read child nodes
-            // For now, return error as this is more complex
+            // TODO: Handle non-leaf nodes
             return errors.FileSystemError.ReadError;
         }
     }
 
-    pub fn getEntry(self: *Ext4FileSystem, allocator: Allocator, path: []const u8) !Entry {
+    pub fn getEntry(self: *Ext4FS, allocator: Allocator, path: []const u8) !Entry {
         // For now, only support root directory
         if (std.mem.eql(u8, path, "/")) {
             return self.getRootEntry(allocator);
@@ -189,7 +162,7 @@ pub const Ext4FileSystem = struct {
         return errors.FileSystemError.EntryNotFound;
     }
 
-    pub fn readFile(self: *Ext4FileSystem, allocator: Allocator, entry: *const Entry) ![]u8 {
+    pub fn readFile(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]u8 {
         // TODO: Implement file reading
         _ = self;
         _ = allocator;
@@ -197,7 +170,7 @@ pub const Ext4FileSystem = struct {
         return errors.FileSystemError.ReadError;
     }
 
-    pub fn listDirectory(self: *Ext4FileSystem, allocator: Allocator, entry: *const Entry) ![]Entry {
+    pub fn listDirectory(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]Entry {
         if (!entry.isDirectory()) {
             return errors.FileSystemError.NotDirectory;
         }

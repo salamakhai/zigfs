@@ -1,8 +1,8 @@
 const std = @import("std");
 const cli = @import("cli");
-const efs = @import("efs");
+const fslib = @import("fslib");
 
-const child_actions = [_]*const cli.Action{
+const sub_actions = [_]*const cli.Action{
     &@import("fs_info.zig").ACTION,
     &@import("fs_ls.zig").ACTION,
 };
@@ -13,7 +13,7 @@ pub const ACTION = cli.Action{
     .generalHelp = getHelp,
     .process = process,
     .interactive = true,
-    .children = &child_actions,
+    .sub_actions = &sub_actions,
 };
 
 fn getHelp(self: *const cli.Action) []const u8 {
@@ -63,12 +63,12 @@ fn process(
     };
     errdefer file.close();
 
-    const mounted_fs = core.allocator.create(efs.FileSystemImpl) catch |err| {
+    const mounted_fs = core.allocator.create(fslib.FileSystemImpl) catch |err| {
         try writer.print("Memory allocation error: {!}\n", .{err});
         return err;
     };
 
-    mounted_fs.* = efs.FileSystemImpl.fromFile(
+    mounted_fs.* = fslib.FileSystemImpl.fromFile(
         core.allocator,
         file,
     ) catch |err| {
