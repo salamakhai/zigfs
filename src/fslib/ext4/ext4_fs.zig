@@ -274,15 +274,14 @@ pub const Ext4FS = struct {
 
         // Create entry from final inode
         const entry_type: EntryType =
-            if (current_inode.isDirectory()) {
-                .directory;
-            } else if (current_inode.isRegularFile()) {
-                .file;
-            } else if (current_inode.isSymlink()) {
-                .symlink;
-            } else {
+            if (current_inode.isDirectory())
+                .directory
+            else if (current_inode.isRegularFile())
+                .file
+            else if (current_inode.isSymlink())
+                .symlink
+            else
                 .unknown;
-            };
 
         return Entry{
             .name = current_name,
