@@ -35,6 +35,7 @@ pub const Ext4DirEntry = extern struct {
             .entry_type = entry_type,
             .size = 0,
             .mode = 0,
+            .inode_number = self.inode,
         };
     }
 

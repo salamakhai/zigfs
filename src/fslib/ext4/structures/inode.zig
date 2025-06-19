@@ -40,6 +40,10 @@ pub const Inode = extern struct {
         return (self.i_mode & 0xF000) == 0x8000;
     }
 
+    pub fn isSymlink(self: *const Inode) bool {
+        return (self.i_mode & 0xF000) == 0xA000;
+    }
+
     pub fn size(self: *const Inode) u64 {
         return @as(u64, self.i_size_lo) | (@as(u64, self.i_size_high) << 32);
     }

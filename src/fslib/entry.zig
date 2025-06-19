@@ -12,6 +12,7 @@ pub const Entry = struct {
     entry_type: EntryType,
     size: u64,
     mode: u16,
+    inode_number: u32,
 
     pub fn isFile(self: *const Entry) bool {
         return self.entry_type == .file;

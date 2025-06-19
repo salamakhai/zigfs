@@ -44,7 +44,8 @@ pub const Ext4FS = struct {
 
     pub fn readInode(self: *Ext4FS, inode_number: u32) !Inode {
         if (inode_number == 0) {
-            return errors.FileSystemError.ReadError; // Inode 0 is invalid
+            // Inode 0 is invalid
+            return errors.FileSystemError.ReadError;
         }
 
         // Calculate which block group contains this inode
@@ -78,13 +79,65 @@ pub const Ext4FS = struct {
         return inode;
     }
 
+    /// Find an entry by name within a directory inode
+    fn findEntryInDirectory(self: *Ext4FS, allocator: Allocator, dir_inode: *const Inode, entry_name: []const u8) !u32 {
+        if (!dir_inode.isDirectory()) {
+            return errors.FileSystemError.NotDirectory;
+        }
+
+        // Read the directory data
+        const dir_data = try self.readInodeData(allocator, dir_inode);
+        defer allocator.free(dir_data);
+
+        // Parse directory entries to find the requested entry
+        var offset: usize = 0;
+        while (offset < dir_data.len) {
+            // Ensure we have enough data for the directory entry header
+            if (offset + @sizeOf(Ext4DirEntry) > dir_data.len) {
+                break;
+            }
+
+            // Read the directory entry safely
+            var dir_entry: Ext4DirEntry = undefined;
+            const entry_bytes = std.mem.asBytes(&dir_entry);
+            const available_bytes = @min(entry_bytes.len, dir_data.len - offset);
+            @memcpy(entry_bytes[0..available_bytes], dir_data[offset .. offset + available_bytes]);
+
+            // Validate the entry
+            if (!dir_entry.isValid() or dir_entry.record_len == 0) {
+                break;
+            }
+
+            // Check if this entry extends beyond our data
+            if (offset + dir_entry.record_len > dir_data.len) {
+                break;
+            }
+
+            // Skip deleted entries (inode == 0)
+            if (dir_entry.inode != 0) {
+                // Get the name
+                const name = dir_entry.getName(dir_data, offset);
+
+                // Check if this is the entry we're looking for
+                if (std.mem.eql(u8, name, entry_name)) {
+                    return dir_entry.inode;
+                }
+            }
+
+            // Move to next entry
+            offset = dir_entry.nextEntry(offset);
+        }
+
+        return errors.FileSystemError.EntryNotFound;
+    }
+
     pub fn getRootInode(self: *Ext4FS) !Inode {
         // Root directory is always inode 2 in ext4
         return self.readInode(2);
     }
 
     pub fn getRootEntry(self: *Ext4FS, allocator: Allocator) !Entry {
-        _ = allocator; // Will use for name allocation later
+        _ = allocator;
         const root_inode = try self.getRootInode();
 
         return Entry{
@@ -92,6 +145,7 @@ pub const Ext4FS = struct {
             .entry_type = if (root_inode.isDirectory()) .directory else .file,
             .size = root_inode.size(),
             .mode = root_inode.i_mode,
+            .inode_number = 2,
         };
     }
 
@@ -153,13 +207,90 @@ pub const Ext4FS = struct {
     }
 
     pub fn getEntry(self: *Ext4FS, allocator: Allocator, path: []const u8) !Entry {
-        // For now, only support root directory
+        // Handle root directory
         if (std.mem.eql(u8, path, "/")) {
             return self.getRootEntry(allocator);
         }
 
-        // TODO: Implement full path resolution for subdirectories
-        return errors.FileSystemError.EntryNotFound;
+        // Handle empty path as root
+        if (path.len == 0) {
+            return self.getRootEntry(allocator);
+        }
+
+        // Validate path length
+        if (path.len > 4096) {
+            return errors.FileSystemError.EntryNotFound; // Path too long
+        }
+
+        // Split path into components, skipping empty components
+        var path_components = std.ArrayList([]const u8).init(allocator);
+        defer path_components.deinit();
+
+        var iter = std.mem.splitScalar(u8, path, '/');
+        while (iter.next()) |component| {
+            if (component.len > 0) {
+                try path_components.append(component);
+            }
+        }
+
+        // Start from root directory
+        var current_inode = try self.getRootInode();
+        var current_name = try allocator.dupe(u8, "/");
+        var current_inode_number: u32 = 2; // Root inode is always 2
+
+        // Traverse path components
+        for (path_components.items) |component| {
+            // Ensure current entry is a directory
+            if (!current_inode.isDirectory()) {
+                allocator.free(current_name);
+                return errors.FileSystemError.NotDirectory;
+            }
+
+            // Find the component in the current directory
+            current_inode_number = self.findEntryInDirectory(allocator, &current_inode, component) catch |err| {
+                allocator.free(current_name);
+                return switch (err) {
+                    error.EntryNotFound => errors.FileSystemError.EntryNotFound,
+                    error.NotDirectory => errors.FileSystemError.NotDirectory,
+                    else => err,
+                };
+            };
+
+            // Read the found entry's inode
+            current_inode = self.readInode(current_inode_number) catch |err| {
+                allocator.free(current_name);
+                return err;
+            };
+
+            // Handle symbolic link resolution
+            if (current_inode.isSymlink()) {
+                // TODO: Implement symbolic link resolution
+            }
+
+            // Update current name (free previous, allocate new)
+            allocator.free(current_name);
+            current_name = try allocator.dupe(u8, component);
+        }
+
+        // Create entry from final inode
+        const entry_type: EntryType =
+            if (current_inode.isDirectory()) {
+                .directory;
+            } else if (current_inode.isRegularFile()) {
+                .file;
+            } else if (current_inode.isSymlink()) {
+                .symlink;
+            } else {
+                .unknown;
+            };
+
+        return Entry{
+            .name = current_name,
+            .entry_type = entry_type,
+            .size = current_inode.size(),
+            .mode = current_inode.i_mode,
+            .inode_number = current_inode_number,
+        };
     }
 
     pub fn readFile(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]u8 {
@@ -175,16 +306,11 @@ pub const Ext4FS = struct {
             return errors.FileSystemError.NotDirectory;
         }
 
-        // For now, only support root directory
-        if (!std.mem.eql(u8, entry.name, "/")) {
-            return errors.FileSystemError.ReadError; // Not implemented for other directories yet
-        }
-
-        // Get the root directory inode
-        const root_inode = try self.getRootInode();
+        // Get the directory inode using the inode number stored in the entry
+        const dir_inode = try self.readInode(entry.inode_number);
 
         // Read the directory data
-        const dir_data = try self.readInodeData(allocator, &root_inode);
+        const dir_data = try self.readInodeData(allocator, &dir_inode);
         defer allocator.free(dir_data);
 
         // Parse directory entries
@@ -197,8 +323,15 @@ pub const Ext4FS = struct {
                 break;
             }
 
-            // Read the directory entry
-            const dir_entry = @as(*const Ext4DirEntry, @ptrCast(@alignCast(&dir_data[offset])));
+            // Read the directory entry safely
+            var dir_entry: Ext4DirEntry = undefined;
+            const entry_bytes = std.mem.asBytes(&dir_entry);
+            const available_bytes = @min(entry_bytes.len, dir_data.len - offset);
+
+            @memcpy(
+                entry_bytes[0..available_bytes],
+                dir_data[offset .. offset + available_bytes],
+            );
 
             // Validate the entry
             if (!dir_entry.isValid() or dir_entry.record_len == 0) {
@@ -215,23 +348,20 @@ pub const Ext4FS = struct {
                 // Get the name
                 const name = dir_entry.getName(dir_data, offset);
 
-                // Skip "." and ".." entries for cleaner output
-                if (!std.mem.eql(u8, name, ".") and !std.mem.eql(u8, name, "..")) {
-                    // Create entry with enhanced information
-                    var filesystem_entry = try dir_entry.toEntry(name, allocator);
+                // Create entry with enhanced information
+                var filesystem_entry = try dir_entry.toEntry(name, allocator);
+                filesystem_entry.inode_number = dir_entry.inode;
 
-                    // Try to read the inode to get size and mode information
-                    if (self.readInode(dir_entry.inode)) |inode| {
-                        filesystem_entry.size = inode.size();
-                        filesystem_entry.mode = inode.i_mode;
-                    } else |_| {
-                        // If we can't read the inode, use defaults
-                        filesystem_entry.size = 0;
-                        filesystem_entry.mode = 0;
-                    }
-
-                    try entries.append(filesystem_entry);
+                // Try to read the inode to get size and mode information
+                if (self.readInode(dir_entry.inode)) |inode| {
+                    filesystem_entry.size = inode.size();
+                    filesystem_entry.mode = inode.i_mode;
+                } else |_| {
+                    filesystem_entry.size = 0;
+                    filesystem_entry.mode = 0;
                 }
+
+                try entries.append(filesystem_entry);
             }
 
             // Move to next entry

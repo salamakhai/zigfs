@@ -23,6 +23,18 @@ fn getHelp(self: *const cli.Action) []const u8 {
     ;
 }
 
+fn formatFileSize(size: u64, buffer: []u8) ![]const u8 {
+    if (size < 1024) {
+        return std.fmt.bufPrint(buffer, "{} B", .{size});
+    } else if (size < 1024 * 1024) {
+        return std.fmt.bufPrint(buffer, "{d:.1} KB", .{@as(f64, @floatFromInt(size)) / 1024.0});
+    } else if (size < 1024 * 1024 * 1024) {
+        return std.fmt.bufPrint(buffer, "{d:.1} MB", .{@as(f64, @floatFromInt(size)) / (1024.0 * 1024.0)});
+    } else {
+        return std.fmt.bufPrint(buffer, "{d:.1} GB", .{@as(f64, @floatFromInt(size)) / (1024.0 * 1024.0 * 1024.0)});
+    }
+}
+
 fn process(
     self: *cli.Action,
     core: *cli.Core,
@@ -32,42 +44,36 @@ fn process(
 ) anyerror!void {
     _ = reader;
 
-    // Get filesystem context from parent browse action
-    if (self.context == null) {
-        try writer.print("Error: No filesystem mounted. Use 'browse' command first.\n", .{});
-        return;
-    }
-
     const mounted_fs = @as(*fslib.FileSystemImpl, @ptrCast(@alignCast(self.context.?)));
 
-    // Determine path to list
     const path = if (args.len > 0) args[0] else "/";
 
-    // Get the directory entry
-    const dir_entry = mounted_fs.getEntry(core.allocator, path) catch |err| switch (err) {
-        error.EntryNotFound => {
-            try writer.print("Error: Path '{s}' not found\n", .{path});
-            return;
-        },
-        else => {
-            try writer.print("Error reading path '{s}': {!}\n", .{ path, err });
-            return err;
-        },
+    const dir_entry = mounted_fs.getEntry(
+        core.allocator,
+        path,
+    ) catch |err| {
+        switch (err) {
+            error.EntryNotFound => {
+                try writer.print("Error: Path '{s}' not found\n", .{path});
+                return;
+            },
+            else => {
+                try writer.print("Error reading path '{s}': {!}\n", .{ path, err });
+                return err;
+            },
+        }
     };
 
-    // Check if it's a directory
     if (!dir_entry.isDirectory()) {
         try writer.print("Error: '{s}' is not a directory\n", .{path});
         return;
     }
 
-    // List directory contents
     const entries = mounted_fs.listDirectory(core.allocator, &dir_entry) catch |err| {
         try writer.print("Error listing directory '{s}': {!}\n", .{ path, err });
         return err;
     };
     defer {
-        // Free entry names and the entries array
         for (entries) |entry| {
             core.allocator.free(entry.name);
         }
@@ -81,8 +87,8 @@ fn process(
 
     // Print header
     try writer.print("Contents of '{s}':\n", .{path});
-    try writer.print("{s:<20} {s:<10} {s:<8} {s}\n", .{ "Name", "Type", "Mode", "Size" });
-    try writer.print("{s}\n", .{"-" ** 50});
+    try writer.print("{s:<25} {s:<10} {s:<8} {s}\n", .{ "Name", "Type", "Mode", "Size" });
+    try writer.print("{s}\n", .{"-" ** 60});
 
     // Print entries
     for (entries) |entry| {
@@ -93,13 +99,23 @@ fn process(
             .unknown => "unknown",
         };
 
-        try writer.print("{s:<20} {s:<10} 0x{X:0>4} {}\n", .{
-            entry.name,
-            type_str,
-            entry.mode,
-            entry.size,
-        });
+        var size_buffer: [32]u8 = undefined;
+        const formatted_size = formatFileSize(entry.size, &size_buffer) catch "N/A";
+
+        try writer.print(
+            "{s:<25} {s:<10} 0x{X:0>4} {s}\n",
+            .{
+                entry.name,
+                type_str,
+                entry.mode,
+                formatted_size,
+            },
+        );
     }
 
-    try writer.print("\nTotal: {} entries\n", .{entries.len});
+    // Print total
+    try writer.print(
+        "\nTotal: {} entries\n",
+        .{entries.len},
+    );
 }
