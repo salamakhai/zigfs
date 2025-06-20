@@ -293,11 +293,12 @@ pub const Ext4FS = struct {
     }
 
     pub fn readFile(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]u8 {
-        // TODO: Implement file reading
-        _ = self;
-        _ = allocator;
-        _ = entry;
-        return errors.FileSystemError.ReadError;
+        if (!entry.isFile()) {
+            return errors.FileSystemError.ReadError;
+        }
+
+        const file_inode = try self.readInode(entry.inode_number);
+        return self.readInodeData(allocator, &file_inode);
     }
 
     pub fn listDirectory(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]Entry {
@@ -337,7 +338,7 @@ pub const Ext4FS = struct {
                 break;
             }
 
-            // Check if this entry extends beyond our data
+            // Check if this entry extends beyond data
             if (offset + dir_entry.record_len > dir_data.len) {
                 break;
             }

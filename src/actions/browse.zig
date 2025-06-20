@@ -5,6 +5,7 @@ const fslib = @import("fslib");
 const sub_actions = [_]*const cli.Action{
     &@import("fs_info.zig").ACTION,
     &@import("fs_ls.zig").ACTION,
+    &@import("fs_cut.zig").ACTION,
 };
 
 pub const ACTION = cli.Action{
