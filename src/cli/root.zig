@@ -4,10 +4,8 @@ pub const Core = @import("core/core.zig").Core;
 pub const Command = Core.Command;
 pub const Action = Core.Action;
 
-pub const Reader = std.io.AnyReader;
-pub const Writer = std.io.AnyWriter;
-
 pub const commands = &[_]Command{
+    @import("commands/command_info.zig").COMMAND,
     @import("commands/command_ls.zig").COMMAND,
 };
 

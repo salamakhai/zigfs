@@ -67,7 +67,7 @@ pub const Core = struct {
         };
 
         command.execute(command, self, &args_iter) catch |err| {
-            self.writer.print("Error: Command '{s}' executing failed {!}\n", .{ command_name, err }) catch {};
+            self.writer.print("Error: Command '{s}' executing failed '{!}'\n", .{ command_name, err }) catch {};
         };
     }
 

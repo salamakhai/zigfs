@@ -2,8 +2,6 @@ const std = @import("std");
 const cli = @import("cli");
 const Core = cli.Core;
 
-const action_registry = @import("actions/root.zig");
-
 pub const ExitCode = enum(u8) {
     Success = 0,
     GeneralError = 1,

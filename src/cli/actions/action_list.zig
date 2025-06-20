@@ -1,5 +1,9 @@
 const std = @import("std");
 
+const fslib = @import("fslib");
+const FileSystemError = fslib.FileSystemError;
+const FileSystem = fslib.FileSystem;
+
 const Core = @import("../core/core.zig").Core;
 const Action = Core.Action;
 const Context = Core.Context;
@@ -7,10 +11,6 @@ const Allocator = Core.Allocator;
 const Writer = Core.Writer;
 const AgrIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
-
-const fslib = @import("fslib");
-const FileSystemError = fslib.FileSystemError;
-const FileSystem = fslib.FileSystem;
 
 // Public
 pub fn NewAction() Action {
