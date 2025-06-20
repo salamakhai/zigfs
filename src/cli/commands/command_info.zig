@@ -14,7 +14,7 @@ const NewInfoAction = @import("../actions/action_info.zig").NewAction;
 pub const COMMAND = Command{
     .name = "info",
     .description = "Display detailed information about a filesystem image",
-    .helpFunc = help,
+    .getHelp = help,
     .execute = execute,
 };
 
@@ -35,6 +35,7 @@ fn execute(
     args: *const ArgIterator,
 ) CommandError!void {
     _ = self;
+
     const allocator = core.allocator;
     const writer = core.writer;
     const mount = NewMountAction();

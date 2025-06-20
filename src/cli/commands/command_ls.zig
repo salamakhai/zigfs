@@ -14,7 +14,7 @@ const NewMountAction = @import("../actions/action_mount.zig").NewAction;
 pub const COMMAND = Command{
     .name = "ls",
     .description = "List directory contents",
-    .helpFunc = help,
+    .getHelp = help,
     .execute = execute,
 };
 
@@ -37,6 +37,7 @@ fn execute(
     args: *const ArgIterator,
 ) CommandError!void {
     _ = self;
+
     const allocator = core.allocator;
     const writer = core.writer;
     const mount = NewMountAction();

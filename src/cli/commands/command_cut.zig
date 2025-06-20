@@ -14,7 +14,7 @@ const NewMountAction = @import("../actions/action_mount.zig").NewAction;
 pub const COMMAND = Command{
     .name = "cut",
     .description = "Extract data from a file",
-    .helpFunc = help,
+    .getHelp = help,
     .execute = execute,
 };
 

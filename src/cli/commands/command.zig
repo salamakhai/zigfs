@@ -19,7 +19,7 @@ pub const Command = struct {
     name: []const u8,
     description: []const u8,
 
-    helpFunc: *const fn () []const u8,
+    getHelp: *const fn () []const u8,
     execute: *const fn (
         *const Command,
         *const Core,

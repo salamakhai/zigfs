@@ -13,7 +13,8 @@ pub const Core = struct {
     const CoreError = @import("errors.zig").CoreError;
 
     pub const Context = @import("context.zig").Context;
-    const constants = @import("constants.zig");
+    pub const constants = @import("constants.zig");
+
     const parser = @import("parser.zig");
     const renderer = @import("renderer.zig");
 
@@ -21,7 +22,7 @@ pub const Core = struct {
     allocator: Allocator,
     reader: Reader,
     writer: Writer,
-    registry: []const Command,
+    commands: []const Command,
 
     // Lifecycle
     pub fn init(
@@ -36,7 +37,7 @@ pub const Core = struct {
             .allocator = allocator,
             .reader = reader,
             .writer = writer,
-            .registry = registry,
+            .commands = registry,
         };
 
         return instance;
@@ -76,7 +77,7 @@ pub const Core = struct {
 
     // Private
     pub fn findCommand(self: *const Core, name: []const u8) ?*const Command {
-        for (self.registry) |*command| {
+        for (self.commands) |*command| {
             if (std.mem.eql(u8, command.name, name)) {
                 return command;
             }
@@ -86,7 +87,7 @@ pub const Core = struct {
 
     pub fn printCommands(self: *Core) !void {
         try self.writer.print("Available commands:\n", .{});
-        for (self.registry) |command| {
+        for (self.commands) |command| {
             try self.writer.print("  {s:<12} {s}\n", .{ command.name, command.description });
         }
         try self.writer.print("\n", .{});
