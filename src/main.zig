@@ -1,5 +1,6 @@
 const std = @import("std");
 const cli = @import("cli");
+const Core = cli.Core;
 
 const action_registry = @import("actions/root.zig");
 
@@ -15,6 +16,7 @@ pub const ExitCode = enum(u8) {
 /// Application entry
 pub fn main() !u8 {
     var main_allocator = std.heap.DebugAllocator(.{}){};
+
     defer {
         const leaked = main_allocator.deinit();
         if (leaked == .leak) {
@@ -26,31 +28,24 @@ pub fn main() !u8 {
     defer arena.deinit();
 
     const allocator = arena.allocator();
-    const stderr = std.io.getStdErr().writer();
+    const std_reader = std.io.getStdIn().reader().any();
+    const std_writer = std.io.getStdOut().writer().any();
 
-    // TODO: Decide on mutability of references in structs
-    const actions = try allocator.alloc(cli.Action, action_registry.actions.len);
-    @memcpy(actions, action_registry.actions);
-
-    var args_iter = try std.process.argsWithAllocator(allocator);
-    defer args_iter.deinit();
-
-    const core = try cli.Core.init(
+    const core: Core = try cli.InitCore(
         allocator,
-        std.io.getStdIn().reader().any(),
-        std.io.getStdOut().writer().any(),
-        actions,
+        std_reader,
+        std_writer,
     );
     defer core.deinit();
 
-    core.processArgs(&args_iter) catch |err| {
+    core.run() catch |err| {
         switch (err) {
             error.OutOfMemory => {
-                try stderr.print("Error: Out of memory\n", .{});
+                try std_writer.print("Error: Out of memory\n", .{});
                 return @intFromEnum(ExitCode.MemoryError);
             },
             else => {
-                try stderr.print("Command error: {s}\n", .{@errorName(err)});
+                try std_writer.print("Command error: {s}\n", .{@errorName(err)});
                 return @intFromEnum(ExitCode.CommandError);
             },
         }
