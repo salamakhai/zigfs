@@ -9,6 +9,7 @@ pub const Command = struct {
         AccessDenied,
         InvalidPath,
         NotDirectory,
+        NotFile,
         EntryNotFound,
         ReadError,
         WriteError,
