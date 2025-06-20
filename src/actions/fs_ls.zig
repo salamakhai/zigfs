@@ -44,7 +44,7 @@ fn process(
 ) anyerror!void {
     _ = reader;
 
-    const mounted_fs = @as(*fslib.FileSystemImpl, @ptrCast(@alignCast(self.context.?)));
+    const mounted_fs = @as(*fslib.FileSystem, @ptrCast(@alignCast(self.context.?)));
 
     const path = if (args.len > 0) args[0] else "/";
 

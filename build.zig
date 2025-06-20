@@ -13,13 +13,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // ---CLI---
-    const cli_module = b.createModule(.{
-        .root_source_file = b.path("src/cli/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
     // ---FSLIB---
     const fslib_module = b.createModule(.{
         .root_source_file = b.path("src/fslib/root.zig"),
@@ -27,8 +20,16 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // -----------------
+    // ---CLI---
+    const cli_module = b.createModule(.{
+        .root_source_file = b.path("src/cli/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 
+    cli_module.addImport("fslib", fslib_module);
+
+    // -----------------
     const exe = b.addExecutable(.{
         .name = "zigfs",
         .root_source_file = b.path("src/main.zig"),

@@ -14,7 +14,7 @@ const Entry = @import("../entry.zig").Entry;
 const EntryType = @import("../entry.zig").EntryType;
 const errors = @import("../errors.zig");
 
-pub const Ext4FS = struct {
+pub const Ext4FileSystem = struct {
     file: fs.File,
     superblock: Superblock,
     allocator: Allocator,
@@ -23,11 +23,11 @@ pub const Ext4FS = struct {
     pub fn init(
         allocator: Allocator,
         file: fs.File,
-    ) !*Ext4FS {
+    ) !*Ext4FileSystem {
         var superblock = try Superblock.fromFile(file);
 
-        const image = try allocator.create(Ext4FS);
-        image.* = Ext4FS{
+        const image = try allocator.create(Ext4FileSystem);
+        image.* = Ext4FileSystem{
             .file = file,
             .superblock = superblock,
             .allocator = allocator,
@@ -37,12 +37,12 @@ pub const Ext4FS = struct {
         return image;
     }
 
-    pub fn deinit(self: *Ext4FS) void {
+    pub fn deinit(self: *Ext4FileSystem) void {
         self.file.close();
         self.allocator.destroy(self);
     }
 
-    pub fn readInode(self: *Ext4FS, inode_number: u32) !Inode {
+    pub fn readInode(self: *Ext4FileSystem, inode_number: u32) !Inode {
         if (inode_number == 0) {
             // Inode 0 is invalid
             return errors.FileSystemError.ReadError;
@@ -80,7 +80,7 @@ pub const Ext4FS = struct {
     }
 
     /// Find an entry by name within a directory inode
-    fn findEntryInDirectory(self: *Ext4FS, allocator: Allocator, dir_inode: *const Inode, entry_name: []const u8) !u32 {
+    fn findEntryInDirectory(self: *Ext4FileSystem, allocator: Allocator, dir_inode: *const Inode, entry_name: []const u8) !u32 {
         if (!dir_inode.isDirectory()) {
             return errors.FileSystemError.NotDirectory;
         }
@@ -131,12 +131,12 @@ pub const Ext4FS = struct {
         return errors.FileSystemError.EntryNotFound;
     }
 
-    pub fn getRootInode(self: *Ext4FS) !Inode {
+    pub fn getRootInode(self: *Ext4FileSystem) !Inode {
         // Root directory is always inode 2 in ext4
         return self.readInode(2);
     }
 
-    pub fn getRootEntry(self: *Ext4FS, allocator: Allocator) !Entry {
+    pub fn getRootEntry(self: *Ext4FileSystem, allocator: Allocator) !Entry {
         _ = allocator;
         const root_inode = try self.getRootInode();
 
@@ -150,7 +150,7 @@ pub const Ext4FS = struct {
     }
 
     /// Read data blocks from an inode
-    pub fn readInodeData(self: *Ext4FS, allocator: Allocator, inode: *const Inode) ![]u8 {
+    pub fn readInodeData(self: *Ext4FileSystem, allocator: Allocator, inode: *const Inode) ![]u8 {
         const file_size = inode.size();
 
         if (file_size == 0) {
@@ -164,7 +164,7 @@ pub const Ext4FS = struct {
     }
 
     /// Read data using extent tree
-    fn readExtentData(self: *Ext4FS, data: []u8, inode: *const Inode) !void {
+    fn readExtentData(self: *Ext4FileSystem, data: []u8, inode: *const Inode) !void {
         // The extent tree root is stored in i_block
         const extent_data = std.mem.asBytes(&inode.i_block);
         const header = @as(*const ExtentHeader, @ptrCast(@alignCast(extent_data.ptr)));
@@ -206,7 +206,7 @@ pub const Ext4FS = struct {
         }
     }
 
-    pub fn getEntry(self: *Ext4FS, allocator: Allocator, path: []const u8) !Entry {
+    pub fn getEntry(self: *Ext4FileSystem, allocator: Allocator, path: []const u8) !Entry {
         // Handle root directory
         if (std.mem.eql(u8, path, "/")) {
             return self.getRootEntry(allocator);
@@ -292,7 +292,7 @@ pub const Ext4FS = struct {
         };
     }
 
-    pub fn readFile(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]u8 {
+    pub fn readFile(self: *Ext4FileSystem, allocator: Allocator, entry: *const Entry) ![]u8 {
         if (!entry.isFile()) {
             return errors.FileSystemError.ReadError;
         }
@@ -301,7 +301,7 @@ pub const Ext4FS = struct {
         return self.readInodeData(allocator, &file_inode);
     }
 
-    pub fn listDirectory(self: *Ext4FS, allocator: Allocator, entry: *const Entry) ![]Entry {
+    pub fn listDirectory(self: *Ext4FileSystem, allocator: Allocator, entry: *const Entry) ![]Entry {
         if (!entry.isDirectory()) {
             return errors.FileSystemError.NotDirectory;
         }

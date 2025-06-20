@@ -38,7 +38,7 @@ fn process(
         return;
     }
 
-    const mounted_fs = @as(*fslib.FileSystemImpl, @ptrCast(@alignCast(self.context.?)));
+    const mounted_fs = @as(*fslib.FileSystem, @ptrCast(@alignCast(self.context.?)));
     const file_path = args[0];
     const output_file = if (args.len > 1) args[1] else null;
 

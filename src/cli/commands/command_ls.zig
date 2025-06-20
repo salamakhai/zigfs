@@ -6,6 +6,8 @@ const ArgIterator = Core.ArgIterator;
 const Command = Core.Command;
 const Action = Core.Action;
 
+const CommandError = Command.CommandError;
+
 const NewListAction = @import("../actions/action_list.zig").NewAction;
 const NewMountAction = @import("../actions/action_mount.zig").NewAction;
 
@@ -16,8 +18,7 @@ pub const COMMAND = Command{
     .execute = execute,
 };
 
-fn help(self: *const Action) []const u8 {
-    _ = self;
+fn help() []const u8 {
     return 
     \\Usage: ls [path]
     \\
@@ -31,18 +32,25 @@ fn help(self: *const Action) []const u8 {
 }
 
 fn execute(
-    self: *Command,
-    args: ArgIterator,
-) anyerror!void {
-    const core = self.core;
-
+    self: *const Command,
+    core: *const Core,
+    args: *const ArgIterator,
+) CommandError!void {
+    _ = self;
     const allocator = core.allocator;
     const writer = core.writer;
-    const context = try core.allocator.create(Context);
-
     const mount = NewMountAction();
     const list = NewListAction();
 
-    mount.invoke(context, allocator, args, writer);
-    list.invoke(context, allocator, args, writer);
+    const context = core.allocator.create(Context) catch {
+        return CommandError.OutOfMemory;
+    };
+    defer core.allocator.destroy(context);
+
+    // Mutable copy for args processing
+    var args_copy = args.*;
+
+    try mount.invoke(context, allocator, &args_copy, writer);
+    writer.print("\n", .{}) catch {};
+    try list.invoke(context, allocator, &args_copy, writer);
 }

@@ -2,18 +2,18 @@ const std = @import("std");
 const Entry = @import("entry.zig").Entry;
 const errors = @import("errors.zig");
 
-const Ext4FS = @import("ext4/ext4_fs.zig").Ext4FS;
+const Ext4FileSystem = @import("ext4/filesystem.zig").Ext4FileSystem;
 
-pub const FileSystemImpl = union(enum) {
-    ext4: *Ext4FS,
+pub const FileSystem = union(enum) {
+    ext4: *Ext4FileSystem,
 
-    pub fn fromFile(allocator: std.mem.Allocator, file: std.fs.File) !FileSystemImpl {
+    pub fn fromFile(allocator: std.mem.Allocator, file: std.fs.File) !FileSystem {
         // Try to detect magic number to determine filesystem type
         const magic = try detectMagic(file);
 
         switch (magic) {
             0xEF53 => {
-                const ext4_fs = try Ext4FS.init(allocator, file);
+                const ext4_fs = try Ext4FileSystem.init(allocator, file);
                 return .{
                     .ext4 = ext4_fs,
                 };
@@ -24,19 +24,19 @@ pub const FileSystemImpl = union(enum) {
         }
     }
 
-    pub fn getRootEntry(self: *FileSystemImpl, allocator: std.mem.Allocator) !Entry {
+    pub fn getRootEntry(self: *FileSystem, allocator: std.mem.Allocator) !Entry {
         switch (self.*) {
             .ext4 => |fs| return fs.getRootEntry(allocator),
         }
     }
 
-    pub fn getEntry(self: *FileSystemImpl, allocator: std.mem.Allocator, path: []const u8) !Entry {
+    pub fn getEntry(self: *FileSystem, allocator: std.mem.Allocator, path: []const u8) !Entry {
         switch (self.*) {
             .ext4 => |fs| return fs.getEntry(allocator, path),
         }
     }
 
-    pub fn readFile(self: *FileSystemImpl, allocator: std.mem.Allocator, entry: *const Entry) ![]u8 {
+    pub fn readFile(self: *FileSystem, allocator: std.mem.Allocator, entry: *const Entry) ![]u8 {
         if (!entry.isFile()) {
             return errors.FileSystemError.ReadError;
         }
@@ -46,7 +46,7 @@ pub const FileSystemImpl = union(enum) {
         }
     }
 
-    pub fn listDirectory(self: *FileSystemImpl, allocator: std.mem.Allocator, entry: *const Entry) ![]Entry {
+    pub fn listDirectory(self: *FileSystem, allocator: std.mem.Allocator, entry: *const Entry) ![]Entry {
         if (!entry.isDirectory()) {
             return errors.FileSystemError.ReadError;
         }
@@ -56,7 +56,7 @@ pub const FileSystemImpl = union(enum) {
         }
     }
 
-    pub fn deinit(self: *FileSystemImpl) void {
+    pub fn deinit(self: *FileSystem) void {
         switch (self.*) {
             .ext4 => |fs| fs.deinit(),
         }

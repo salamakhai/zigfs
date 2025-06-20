@@ -12,7 +12,8 @@ pub const Core = struct {
 
     const CoreError = @import("errors.zig").CoreError;
 
-    const Context = @import("context.zig").Context;
+    pub const Context = @import("context.zig").Context;
+    const constants = @import("constants.zig");
     const parser = @import("parser.zig");
     const renderer = @import("renderer.zig");
 
@@ -20,14 +21,14 @@ pub const Core = struct {
     allocator: Allocator,
     reader: Reader,
     writer: Writer,
-    registry: []Command,
+    registry: []const Command,
 
     // Lifecycle
     pub fn init(
         allocator: Allocator,
         reader: Reader,
         writer: Writer,
-        registry: []Command,
+        registry: []const Command,
     ) !*Core {
         const instance = try allocator.create(Core);
 
@@ -45,27 +46,36 @@ pub const Core = struct {
         self.allocator.destroy(self);
     }
 
-    pub fn run(self: *Core) void {
+    pub fn run(self: *Core) !void {
         const allocator = self.allocator;
 
         var args_iter = try std.process.argsWithAllocator(allocator);
         defer args_iter.deinit();
 
-        const command_name = try args_iter.next();
+        // Skip the program name
+        _ = args_iter.next();
 
-        const command = findCommand(command_name) orelse {
-            try self.writer.print("Error: Unknown command '{s}'\n", .{command_name});
-            return CoreError.UnknownAction;
+        const command_name = args_iter.next() orelse {
+            try self.printCommands();
+            return;
         };
 
-        command.execute(args_iter);
+        const command = self.findCommand(command_name) orelse {
+            try self.writer.print("Error: Unknown command '{s}'\n", .{command_name});
+            try self.printCommands();
+            return;
+        };
+
+        command.execute(command, self, &args_iter) catch |err| {
+            self.writer.print("Error: Command '{s}' executing failed {!}\n", .{ command_name, err }) catch {};
+        };
     }
 
     // Public
     // public api, building blocks for commands.
 
     // Private
-    pub fn findCommand(self: *const Core, name: []const u8) ?*Command {
+    pub fn findCommand(self: *const Core, name: []const u8) ?*const Command {
         for (self.registry) |*command| {
             if (std.mem.eql(u8, command.name, name)) {
                 return command;
@@ -74,10 +84,10 @@ pub const Core = struct {
         return null;
     }
 
-    pub fn printActions(self: *Core) !void {
-        try self.writer.print("Available actions:\n", .{});
-        for (self.actions) |action| {
-            try self.writer.print("  {s:<12} {s}\n", .{ action.name, action.description });
+    pub fn printCommands(self: *Core) !void {
+        try self.writer.print("Available commands:\n", .{});
+        for (self.registry) |command| {
+            try self.writer.print("  {s:<12} {s}\n", .{ command.name, command.description });
         }
         try self.writer.print("\n", .{});
     }

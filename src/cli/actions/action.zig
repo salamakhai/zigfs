@@ -3,16 +3,17 @@ const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
 const AgrIterator = Core.ArgIterator;
-
-pub const ActionError = error{};
+const CommandError = Core.Command.CommandError;
 
 pub const Action = struct {
+    pub const ActionError = CommandError;
+
     name: []const u8,
     description: []const u8,
     invoke: *const fn (
         *Context,
-        *Allocator,
+        Allocator,
         *AgrIterator,
-        *?Writer,
+        Writer,
     ) ActionError!void,
 };

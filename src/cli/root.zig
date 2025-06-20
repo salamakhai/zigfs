@@ -15,7 +15,7 @@ pub fn InitCore(
     allocator: Core.Allocator,
     reader: Core.Reader,
     writer: Core.Writer,
-) *Core {
+) !*Core {
     const core = try Core.init(
         allocator,
         reader,

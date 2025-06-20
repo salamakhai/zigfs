@@ -6,10 +6,11 @@ const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
 const AgrIterator = Core.ArgIterator;
+const ActionError = Action.ActionError;
 
 const fslib = @import("fslib");
 const FileSystemError = fslib.FileSystemError;
-const FileSystemImpl = fslib.FileSystemImpl;
+const FileSystem = fslib.FileSystem;
 
 // Public
 pub fn NewAction() Action {
@@ -23,43 +24,49 @@ pub fn NewAction() Action {
 // Private
 fn invoke(
     context: *Context,
-    allocator: *Allocator,
+    allocator: Allocator,
     arguments: *AgrIterator,
-    writer: *Writer,
-) anyerror!void {
-    if (arguments.len == 0) {
-        try writer.print("Error: No mounting file specified\n", .{});
-        return;
-    }
+    writer: Writer,
+) ActionError!void {
+    const file_path = arguments.next() orelse {
+        writer.print("Error: No mounting file specified\n", .{}) catch {};
+        return ActionError.InvalidPath;
+    };
 
-    const file_path = arguments[0];
-
-    try writer.print("Opening file: {s}...\n", .{file_path});
+    writer.print("Opening file: {s}...\n", .{file_path}) catch {};
 
     const file = std.fs.cwd().openFile(
         file_path,
         .{ .mode = .read_only },
     ) catch |err| {
-        try writer.print("File open error: {!}\n", .{err});
-        return err;
+        writer.print("File open error: {!}\n", .{err}) catch {};
+        return switch (err) {
+            error.FileNotFound => ActionError.FileNotFound,
+            error.AccessDenied => ActionError.AccessDenied,
+            else => ActionError.ReadError,
+        };
     };
     errdefer file.close();
 
-    const filesystem = allocator.create(FileSystemImpl) catch |err| {
-        try writer.print("Memory allocation error: {!}\n", .{err});
-        return err;
+    const filesystem = allocator.create(FileSystem) catch {
+        writer.print("Memory allocation error\n", .{}) catch {};
+        return ActionError.OutOfMemory;
     };
 
-    filesystem.* = FileSystemImpl.fromFile(
+    filesystem.* = FileSystem.fromFile(
         allocator,
         file,
     ) catch |err| {
-        try writer.print("Filesystem initialization error: {!}\n", .{err});
+        writer.print("Filesystem initialization error: {!}\n", .{err}) catch {};
         allocator.destroy(filesystem);
-        return err;
+        return switch (err) {
+            error.UnsupportedFormat => ActionError.UnsupportedFormat,
+            error.ReadError => ActionError.ReadError,
+            else => ActionError.ReadError,
+        };
     };
 
     context.newFrom(filesystem);
 
-    try writer.print("Filesystem detected and mounted successfully\n", .{});
+    writer.print("Filesystem detected and mounted successfully\n", .{}) catch {};
 }

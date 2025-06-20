@@ -6,10 +6,11 @@ const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
 const AgrIterator = Core.ArgIterator;
+const ActionError = Action.ActionError;
 
 const fslib = @import("fslib");
 const FileSystemError = fslib.FileSystemError;
-const FileSystemImpl = fslib.FileSystemImpl;
+const FileSystem = fslib.FileSystem;
 
 // Public
 pub fn NewAction() Action {
@@ -23,14 +24,15 @@ pub fn NewAction() Action {
 // Private
 fn invoke(
     context: *Context,
-    allocator: *Allocator,
+    allocator: Allocator,
     arguments: *AgrIterator,
-    writer: *Writer,
-) anyerror!void {
-    const path = arguments.next();
+    writer: Writer,
+) ActionError!void {
+    const path = arguments.next() orelse "/";
 
-    const filesystem = try context.castTo(FileSystemImpl) catch |err| {
-        try writer.print("Error: Context should be '{s}'! {!}\n", .{ FileSystemImpl, err });
+    const filesystem = context.castTo(FileSystem) catch |err| {
+        writer.print("Error: Context should be FileSystem! {!}\n", .{err}) catch {};
+        return ActionError.InvalidPath;
     };
 
     const dir_entry = filesystem.getEntry(
@@ -39,24 +41,24 @@ fn invoke(
     ) catch |err| {
         switch (err) {
             error.EntryNotFound => {
-                try writer.print("Error: Path '{s}' not found\n", .{path});
-                return;
+                writer.print("Error: Path '{s}' not found\n", .{path}) catch {};
+                return ActionError.EntryNotFound;
             },
             else => {
-                try writer.print("Error reading path '{s}': {!}\n", .{ path, err });
-                return err;
+                writer.print("Error reading path '{s}': {!}\n", .{ path, err }) catch {};
+                return ActionError.ReadError;
             },
         }
     };
 
     if (!dir_entry.isDirectory()) {
-        try writer.print("Error: '{s}' is not a directory\n", .{path});
-        return;
+        writer.print("Error: '{s}' is not a directory\n", .{path}) catch {};
+        return ActionError.NotDirectory;
     }
 
     const entries = filesystem.listDirectory(allocator, &dir_entry) catch |err| {
-        try writer.print("Error listing directory '{s}': {!}\n", .{ path, err });
-        return err;
+        writer.print("Error listing directory '{s}': {!}\n", .{ path, err }) catch {};
+        return ActionError.ReadError;
     };
     defer {
         for (entries) |entry| {
@@ -66,14 +68,14 @@ fn invoke(
     }
 
     if (entries.len == 0) {
-        try writer.print("Directory is empty\n", .{});
+        writer.print("Directory is empty\n", .{}) catch {};
         return;
     }
 
     // Print header
-    try writer.print("Contents of '{s}':\n", .{path});
-    try writer.print("{s:<25} {s:<10} {s:<8} {s}\n", .{ "Name", "Type", "Mode", "Size" });
-    try writer.print("{s}\n", .{"-" ** 60});
+    writer.print("Contents of '{s}':\n", .{path}) catch {};
+    writer.print("{s:<25} {s:<10} {s:<8} {s}\n", .{ "Name", "Type", "Mode", "Size" }) catch {};
+    writer.print("{s}\n", .{"-" ** 60}) catch {};
 
     // Print entries
     for (entries) |entry| {
@@ -87,7 +89,7 @@ fn invoke(
         var size_buffer: [32]u8 = undefined;
         const formatted_size = formatFileSize(entry.size, &size_buffer) catch "N/A";
 
-        try writer.print(
+        writer.print(
             "{s:<25} {s:<10} 0x{X:0>4} {s}\n",
             .{
                 entry.name,
@@ -95,14 +97,16 @@ fn invoke(
                 entry.mode,
                 formatted_size,
             },
-        );
+        ) catch {
+            return ActionError.WriteError;
+        };
     }
 
     // Print total
-    try writer.print(
+    writer.print(
         "\nTotal: {} entries\n",
         .{entries.len},
-    );
+    ) catch {};
 }
 
 fn formatFileSize(size: u64, buffer: []u8) ![]const u8 {

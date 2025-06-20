@@ -31,7 +31,7 @@ pub fn main() !u8 {
     const std_reader = std.io.getStdIn().reader().any();
     const std_writer = std.io.getStdOut().writer().any();
 
-    const core: Core = try cli.InitCore(
+    const core = try cli.InitCore(
         allocator,
         std_reader,
         std_writer,

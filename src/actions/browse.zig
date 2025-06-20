@@ -64,12 +64,12 @@ fn process(
     };
     errdefer file.close();
 
-    const mounted_fs = core.allocator.create(fslib.FileSystemImpl) catch |err| {
+    const mounted_fs = core.allocator.create(fslib.FileSystem) catch |err| {
         try writer.print("Memory allocation error: {!}\n", .{err});
         return err;
     };
 
-    mounted_fs.* = fslib.FileSystemImpl.fromFile(
+    mounted_fs.* = fslib.FileSystem.fromFile(
         core.allocator,
         file,
     ) catch |err| {
