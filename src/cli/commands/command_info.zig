@@ -20,12 +20,13 @@ pub const COMMAND = Command{
 
 fn help() []const u8 {
     return 
-    \\Usage: info <image_file>
+    \\Usage: info [file_system_image]
     \\
     \\Display detailed information about a filesystem image.
     \\
     \\Examples:
     \\  info disk.img - Mount and show info for disk.img
+    \\
     ;
 }
 
@@ -41,14 +42,12 @@ fn execute(
     const mount = NewMountAction();
     const info = NewInfoAction();
 
-    const context = core.allocator.create(Context) catch {
-        return CommandError.OutOfMemory;
-    };
-    defer core.allocator.destroy(context);
+    var context = Context.init();
+    defer context.deinit();
 
     var args_copy = args.*;
 
-    try mount.invoke(context, allocator, &args_copy, writer);
+    try mount.invoke(&context, allocator, &args_copy, writer);
     writer.print("\n", .{}) catch {};
-    try info.invoke(context, allocator, &args_copy, writer);
+    try info.invoke(&context, allocator, &args_copy, writer);
 }

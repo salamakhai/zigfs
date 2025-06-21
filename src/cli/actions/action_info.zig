@@ -31,8 +31,8 @@ fn invoke(
     _ = allocator;
     _ = arguments;
 
-    const filesystem = context.castTo(FileSystem) catch |err| {
-        writer.print("Error: Context should be FileSystem! {!}\n", .{err}) catch {};
+    const filesystem = context.getFileSystem() orelse {
+        writer.print("Error: No filesystem mounted in context!\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 

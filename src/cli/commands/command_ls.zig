@@ -1,5 +1,8 @@
 const std = @import("std");
 
+const fslib = @import("fslib");
+const FileSystem = fslib.FileSystem;
+
 const Core = @import("../core/core.zig").Core;
 const Context = Core.Context;
 const ArgIterator = Core.ArgIterator;
@@ -20,7 +23,7 @@ pub const COMMAND = Command{
 
 fn help() []const u8 {
     return 
-    \\Usage: ls [path]
+    \\Usage: ls [file_system_image] [path]
     \\
     \\List the contents of a directory.
     \\If no path is provided, lists the current directory (root).
@@ -43,15 +46,12 @@ fn execute(
     const mount = NewMountAction();
     const list = NewListAction();
 
-    const context = core.allocator.create(Context) catch {
-        return CommandError.OutOfMemory;
-    };
-    defer core.allocator.destroy(context);
+    var context = Context.init();
+    defer context.deinit();
 
-    // Mutable copy for args processing
     var args_copy = args.*;
 
-    try mount.invoke(context, allocator, &args_copy, writer);
+    try mount.invoke(&context, allocator, &args_copy, writer);
     writer.print("\n", .{}) catch {};
-    try list.invoke(context, allocator, &args_copy, writer);
+    try list.invoke(&context, allocator, &args_copy, writer);
 }

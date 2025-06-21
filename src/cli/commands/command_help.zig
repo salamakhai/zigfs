@@ -59,7 +59,7 @@ fn generalInfo(core: *const Core, writer: Writer) void {
         }
     }
 
-    writer.writeAll("\nUse 'help <command>' for more information about a command.\n") catch {};
+    writer.writeAll("\nUse 'help [command]' for more information about a command.\n") catch {};
 }
 
 fn commandInfo(command: *const Command, writer: Writer) void {

@@ -2,6 +2,10 @@ const std = @import("std");
 const cli = @import("cli");
 const Core = cli.Core;
 
+const Allocator = std.heap.GeneralPurposeAllocator;
+const DebugAllocator = std.heap.DebugAllocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
+
 pub const ExitCode = enum(u8) {
     Success = 0,
     GeneralError = 1,
@@ -13,7 +17,7 @@ pub const ExitCode = enum(u8) {
 
 /// Application entry
 pub fn main() !u8 {
-    var main_allocator = std.heap.DebugAllocator(.{}){};
+    var main_allocator = DebugAllocator(.{}){};
 
     defer {
         const leaked = main_allocator.deinit();
@@ -22,10 +26,7 @@ pub fn main() !u8 {
         }
     }
 
-    var arena = std.heap.ArenaAllocator.init(main_allocator.allocator());
-    defer arena.deinit();
-
-    const allocator = arena.allocator();
+    const allocator = main_allocator.allocator();
     const std_reader = std.io.getStdIn().reader().any();
     const std_writer = std.io.getStdOut().writer().any();
 

@@ -30,8 +30,8 @@ fn invoke(
 ) ActionError!void {
     const path = arguments.next() orelse "/";
 
-    const filesystem = context.castTo(FileSystem) catch |err| {
-        writer.print("Error: Context should be FileSystem! {!}\n", .{err}) catch {};
+    const filesystem = context.getFileSystem() orelse {
+        writer.print("Error: Context should be FileSystem!\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 

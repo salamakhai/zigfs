@@ -46,7 +46,6 @@ fn invoke(
             else => ActionError.ReadError,
         };
     };
-    errdefer file.close();
 
     const filesystem = allocator.create(FileSystem) catch {
         writer.print("Memory allocation error\n", .{}) catch {};
@@ -66,7 +65,6 @@ fn invoke(
         };
     };
 
-    context.newFrom(filesystem);
-
+    context.setFileSystem(allocator, filesystem);
     writer.print("Filesystem detected and mounted successfully\n", .{}) catch {};
 }
