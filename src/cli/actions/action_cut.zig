@@ -30,7 +30,6 @@ fn invoke(
 ) ActionError!void {
     const file_path = args.next() orelse {
         writer.print("Error: No file path specified\n", .{}) catch {};
-        writer.print("Usage: cut <file_path> [output_file]\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 

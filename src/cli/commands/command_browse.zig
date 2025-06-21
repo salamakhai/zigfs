@@ -79,7 +79,7 @@ fn execute(
             var arg_iterator = ArgIterator.fromString(allocator, trimmed_input);
             defer arg_iterator.deinit();
 
-            try handleSubCommand(
+            handleSubCommand(
                 &context,
                 allocator,
                 writer,
@@ -113,7 +113,7 @@ fn handleSubCommand(
     writer: Core.Writer,
     arg_iterator: *ArgIterator,
     actions_registry: []const Action,
-) !void {
+) void {
     const command = arg_iterator.next() orelse {
         return;
     };
@@ -130,7 +130,9 @@ fn handleSubCommand(
     };
 
     printBlankLine(writer);
-    try action.invoke(context, allocator, arg_iterator, writer);
+    action.invoke(context, allocator, arg_iterator, writer) catch |err| {
+        writer.print("Action '{s}' executing failed: {!}\n", .{ action.name, err }) catch {};
+    };
     printBlankLine(writer);
 }
 

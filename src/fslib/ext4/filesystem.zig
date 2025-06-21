@@ -137,11 +137,11 @@ pub const Ext4FileSystem = struct {
     }
 
     pub fn getRootEntry(self: *Ext4FileSystem, allocator: Allocator) !Entry {
-        _ = allocator;
         const root_inode = try self.getRootInode();
+        const root_name = try allocator.dupe(u8, "/");
 
         return Entry{
-            .name = "/",
+            .name = root_name,
             .entry_type = if (root_inode.isDirectory()) .directory else .file,
             .size = root_inode.size(),
             .mode = root_inode.i_mode,
