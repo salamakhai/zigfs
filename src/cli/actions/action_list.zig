@@ -9,7 +9,7 @@ const Action = Core.Action;
 const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
-const AgrIterator = Core.ArgIterator;
+const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
@@ -25,7 +25,7 @@ pub fn NewAction() Action {
 fn invoke(
     context: *Context,
     allocator: Allocator,
-    arguments: *AgrIterator,
+    arguments: *ArgIterator,
     writer: Writer,
 ) ActionError!void {
     const path = arguments.next() orelse "/";
@@ -50,6 +50,7 @@ fn invoke(
             },
         }
     };
+    defer allocator.free(dir_entry.name);
 
     if (!dir_entry.isDirectory()) {
         writer.print("Error: '{s}' is not a directory\n", .{path}) catch {};

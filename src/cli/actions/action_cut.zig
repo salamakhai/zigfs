@@ -9,7 +9,7 @@ const Action = Core.Action;
 const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
-const AgrIterator = Core.ArgIterator;
+const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
@@ -25,16 +25,16 @@ pub fn NewAction() Action {
 fn invoke(
     context: *Context,
     allocator: Allocator,
-    arguments: *AgrIterator,
+    args: *ArgIterator,
     writer: Writer,
 ) ActionError!void {
-    const file_path = arguments.next() orelse {
+    const file_path = args.next() orelse {
         writer.print("Error: No file path specified\n", .{}) catch {};
         writer.print("Usage: cut <file_path> [output_file]\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 
-    const output_file = arguments.next();
+    const output_file = args.next();
 
     const filesystem = context.getFileSystem() orelse {
         writer.print("Error: Context should be FileSystem!\n", .{}) catch {};

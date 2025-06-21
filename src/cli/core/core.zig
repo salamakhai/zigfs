@@ -5,18 +5,14 @@ pub const Core = struct {
     pub const Allocator = std.mem.Allocator;
     pub const Reader = std.io.AnyReader;
     pub const Writer = std.io.AnyWriter;
-    pub const ArgIterator = std.process.ArgIterator;
+    pub const ArgIterator = @import("arg_iterator.zig").ArgIterator;
 
+    pub const CoreError = @import("errors.zig").CoreError;
+    pub const Context = @import("context.zig").Context;
     pub const Action = @import("../actions/action.zig").Action;
     pub const Command = @import("../commands/command.zig").Command;
 
-    const CoreError = @import("errors.zig").CoreError;
-
-    pub const Context = @import("context.zig").Context;
     pub const constants = @import("constants.zig");
-
-    const parser = @import("parser.zig");
-    const renderer = @import("renderer.zig");
 
     // Fields
     allocator: Allocator,
@@ -29,7 +25,7 @@ pub const Core = struct {
         allocator: Allocator,
         reader: Reader,
         writer: Writer,
-        registry: []const Command,
+        commands: []const Command,
     ) !*Core {
         const instance = try allocator.create(Core);
 
@@ -37,7 +33,7 @@ pub const Core = struct {
             .allocator = allocator,
             .reader = reader,
             .writer = writer,
-            .commands = registry,
+            .commands = commands,
         };
 
         return instance;
@@ -50,7 +46,7 @@ pub const Core = struct {
     pub fn run(self: *Core) !void {
         const allocator = self.allocator;
 
-        var args_iter = try std.process.argsWithAllocator(allocator);
+        var args_iter = try ArgIterator.fromProcessArgs(allocator);
         defer args_iter.deinit();
 
         // Skip the program name
@@ -71,9 +67,6 @@ pub const Core = struct {
             self.writer.print("Error: Command '{s}' executing failed '{!}'\n", .{ command_name, err }) catch {};
         };
     }
-
-    // Public
-    // public api, building blocks for commands.
 
     // Private
     pub fn findCommand(self: *const Core, name: []const u8) ?*const Command {

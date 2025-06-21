@@ -17,16 +17,15 @@ pub const ExitCode = enum(u8) {
 
 /// Application entry
 pub fn main() !u8 {
-    var main_allocator = DebugAllocator(.{}){};
-
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
-        const leaked = main_allocator.deinit();
+        const leaked = gpa.deinit();
         if (leaked == .leak) {
             std.debug.print("Warning: Memory leaks detected\n", .{});
         }
     }
 
-    const allocator = main_allocator.allocator();
+    const allocator = gpa.allocator();
     const std_reader = std.io.getStdIn().reader().any();
     const std_writer = std.io.getStdOut().writer().any();
 

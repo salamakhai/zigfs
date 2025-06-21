@@ -9,7 +9,7 @@ const Action = Core.Action;
 const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
-const AgrIterator = Core.ArgIterator;
+const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
@@ -25,11 +25,11 @@ pub fn NewAction() Action {
 fn invoke(
     context: *Context,
     allocator: Allocator,
-    arguments: *AgrIterator,
+    args: *ArgIterator,
     writer: Writer,
 ) ActionError!void {
     _ = allocator;
-    _ = arguments;
+    _ = args;
 
     const filesystem = context.getFileSystem() orelse {
         writer.print("Error: No filesystem mounted in context!\n", .{}) catch {};

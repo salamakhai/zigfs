@@ -2,7 +2,7 @@ const Core = @import("../core/core.zig").Core;
 const Context = Core.Context;
 const Allocator = Core.Allocator;
 const Writer = Core.Writer;
-const AgrIterator = Core.ArgIterator;
+const ArgIterator = Core.ArgIterator;
 const CommandError = Core.Command.CommandError;
 
 pub const Action = struct {
@@ -13,7 +13,7 @@ pub const Action = struct {
     invoke: *const fn (
         *Context,
         Allocator,
-        *AgrIterator,
+        *ArgIterator,
         Writer,
     ) ActionError!void,
 };
