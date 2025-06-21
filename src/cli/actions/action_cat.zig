@@ -13,9 +13,9 @@ const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
-pub fn NewAction() Action {
+pub fn CreateAction() Action {
     return Action{
-        .name = "cut",
+        .name = "cat",
         .description = "Extract data from a file",
         .invoke = invoke,
     };

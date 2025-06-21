@@ -8,8 +8,8 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewMountAction = @import("../actions/action_mount.zig").NewAction;
-const NewInfoAction = @import("../actions/action_info.zig").NewAction;
+const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
+const NewInfoAction = @import("../actions/action_info.zig").CreateAction;
 
 pub const COMMAND = Command{
     .name = "info",

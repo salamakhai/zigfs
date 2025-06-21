@@ -11,8 +11,8 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewListAction = @import("../actions/action_list.zig").NewAction;
-const NewMountAction = @import("../actions/action_mount.zig").NewAction;
+const NewListAction = @import("../actions/action_list.zig").CreateAction;
+const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
 
 pub const COMMAND = Command{
     .name = "ls",

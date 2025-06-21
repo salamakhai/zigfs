@@ -8,11 +8,11 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewCutAction = @import("../actions/action_cut.zig").NewAction;
-const NewMountAction = @import("../actions/action_mount.zig").NewAction;
+const NewCatAction = @import("../actions/action_cat.zig").CreateAction;
+const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
 
 pub const COMMAND = Command{
-    .name = "cut",
+    .name = "cat",
     .description = "Extract data from a file",
     .getHelp = help,
     .execute = execute,
@@ -20,7 +20,7 @@ pub const COMMAND = Command{
 
 fn help() []const u8 {
     return 
-    \\Usage: cut [file_system_image] [file_path] [output_file]
+    \\Usage: cat [file_system_image] [file_path] [output_file]
     \\
     \\Extract file data from the filesystem.
     \\If no output file is provided, data is written to stdout.
@@ -42,7 +42,7 @@ fn execute(
     const allocator = core.allocator;
     const writer = core.writer;
     const mount = NewMountAction();
-    const cut = NewCutAction();
+    const cut = NewCatAction();
 
     var context = Context.init();
     defer context.deinit();

@@ -13,7 +13,7 @@ const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
-pub fn NewAction() Action {
+pub fn CreateAction() Action {
     return Action{
         .name = "mount",
         .description = "Mount file system image to the context",

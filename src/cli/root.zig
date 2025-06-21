@@ -8,7 +8,7 @@ pub const commands = &[_]Command{
     @import("commands/command_help.zig").COMMAND,
     @import("commands/command_info.zig").COMMAND,
     @import("commands/command_ls.zig").COMMAND,
-    @import("commands/command_cut.zig").COMMAND,
+    @import("commands/command_cat.zig").COMMAND,
     @import("commands/command_browse.zig").COMMAND,
 };
 

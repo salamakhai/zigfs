@@ -8,10 +8,10 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewCutAction = @import("../actions/action_cut.zig").NewAction;
-const NewMountAction = @import("../actions/action_mount.zig").NewAction;
-const NewInfoAction = @import("../actions/action_info.zig").NewAction;
-const NewListAction = @import("../actions/action_list.zig").NewAction;
+const NewCatAction = @import("../actions/action_cat.zig").CreateAction;
+const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
+const NewInfoAction = @import("../actions/action_info.zig").CreateAction;
+const NewListAction = @import("../actions/action_list.zig").CreateAction;
 
 pub const COMMAND = Command{
     .name = "browse",
@@ -32,6 +32,10 @@ fn help() []const u8 {
     ;
 }
 
+//
+// TODO: Create browser module for session managment, command only for creation context and browser.
+//
+
 fn execute(
     self: *const Command,
     core: *const Core,
@@ -47,7 +51,7 @@ fn execute(
     const mount = NewMountAction();
 
     const actions_registry = [_]Action{
-        NewCutAction(),
+        NewCatAction(),
         NewInfoAction(),
         NewListAction(),
     };
