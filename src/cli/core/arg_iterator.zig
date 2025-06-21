@@ -41,7 +41,6 @@ pub const ArgIterator = union(enum) {
     }
 };
 
-/// Wrapper for std.process.ArgIterator
 pub const ProcessArgIterator = struct {
     inner: std.process.ArgIterator,
 
@@ -61,7 +60,6 @@ pub const ProcessArgIterator = struct {
     }
 };
 
-/// String based argument iterator
 pub const StringArgIterator = struct {
     split_iter: std.mem.SplitIterator(u8, .scalar),
     allocator: std.mem.Allocator,

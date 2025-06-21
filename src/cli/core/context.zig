@@ -5,9 +5,9 @@ const Allocator = Core.Allocator;
 const fslib = @import("fslib");
 const FileSystem = fslib.FileSystem;
 
+/// Unified context
 pub const Context = struct {
-    filesystem: ?*FileSystem = null,
-    allocator: ?Allocator = null,
+    filesystem: ?FileSystemContext = null,
 
     // Lifecycle
     pub fn init() Context {
@@ -15,29 +15,41 @@ pub const Context = struct {
     }
 
     pub fn deinit(self: *Context) void {
-        self.clearFileSystem();
-        self.allocator = null;
+        if (self.filesystem) |*fs| fs.deinit();
     }
 
     // FileSystem
     pub fn setFileSystem(self: *Context, allocator: Allocator, fs: *FileSystem) void {
-        self.clearFileSystem();
+        if (self.filesystem) |*current| {
+            current.deinit();
+        }
 
-        self.filesystem = fs;
-        self.allocator = allocator;
+        self.filesystem = FileSystemContext.init(allocator, fs);
     }
 
     pub fn getFileSystem(self: *const Context) ?*FileSystem {
-        return self.filesystem;
+        if (self.filesystem) |*fs| return fs.getCtx();
+        return null;
+    }
+};
+
+const FileSystemContext = struct {
+    filesystem: *FileSystem,
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator, fs: *FileSystem) FileSystemContext {
+        return FileSystemContext{
+            .filesystem = fs,
+            .allocator = allocator,
+        };
     }
 
-    pub fn clearFileSystem(self: *Context) void {
-        if (self.filesystem) |fs| {
-            if (self.allocator) |alloc| {
-                fs.deinit();
-                alloc.destroy(fs);
-            }
-        }
-        self.filesystem = null;
+    pub fn deinit(self: *FileSystemContext) void {
+        self.filesystem.deinit();
+        self.allocator.destroy(self.filesystem);
+    }
+
+    pub fn getCtx(self: *const FileSystemContext) ?*FileSystem {
+        return self.filesystem;
     }
 };
