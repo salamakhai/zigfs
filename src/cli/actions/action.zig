@@ -10,6 +10,9 @@ pub const Action = struct {
 
     name: []const u8,
     description: []const u8,
+
+    // add factory
+
     invoke: *const fn (
         *Context,
         Allocator,

@@ -40,7 +40,7 @@ fn invoke(
         return ActionError.InvalidPath;
     };
 
-    const file_entry = filesystem.getEntry(
+    const file_entry = filesystem.getPathEntry(
         allocator,
         file_path,
     ) catch |err| {
@@ -62,7 +62,7 @@ fn invoke(
         return ActionError.NotFile;
     }
 
-    const file_data = filesystem.readFile(allocator, &file_entry) catch |err| {
+    const file_data = filesystem.readEntryAsFile(allocator, &file_entry) catch |err| {
         writer.print("Error reading file '{s}': {!}\n", .{ file_path, err }) catch {};
         return ActionError.ReadError;
     };

@@ -35,7 +35,7 @@ fn invoke(
         return ActionError.InvalidPath;
     };
 
-    const dir_entry = filesystem.getEntry(
+    const dir_entry = filesystem.getPathEntry(
         allocator,
         path,
     ) catch |err| {
@@ -57,7 +57,7 @@ fn invoke(
         return ActionError.NotDirectory;
     }
 
-    const entries = filesystem.listDirectory(allocator, &dir_entry) catch |err| {
+    const entries = filesystem.readEntryAsDirectory(allocator, &dir_entry) catch |err| {
         writer.print("Error listing directory '{s}': {!}\n", .{ path, err }) catch {};
         return ActionError.ReadError;
     };

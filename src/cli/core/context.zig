@@ -45,7 +45,7 @@ const FileSystemContext = struct {
     }
 
     pub fn deinit(self: *FileSystemContext) void {
-        self.filesystem.deinit();
+        self.filesystem.destroy();
         self.allocator.destroy(self.filesystem);
     }
 

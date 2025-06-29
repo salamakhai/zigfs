@@ -52,7 +52,7 @@ fn invoke(
         return ActionError.OutOfMemory;
     };
 
-    filesystem.* = FileSystem.fromFile(
+    filesystem.* = FileSystem.create(
         allocator,
         file,
     ) catch |err| {

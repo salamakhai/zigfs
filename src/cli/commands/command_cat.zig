@@ -42,7 +42,7 @@ fn execute(
     const allocator = core.allocator;
     const writer = core.writer;
     const mount = NewMountAction();
-    const cut = NewCatAction();
+    const cat = NewCatAction();
 
     var context = Context.init();
     defer context.deinit();
@@ -51,5 +51,5 @@ fn execute(
 
     try mount.invoke(&context, allocator, &args_copy, writer);
     writer.print("\n", .{}) catch {};
-    try cut.invoke(&context, allocator, &args_copy, writer);
+    try cat.invoke(&context, allocator, &args_copy, writer);
 }

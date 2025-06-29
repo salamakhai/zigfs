@@ -12,7 +12,7 @@ pub const commands = &[_]Command{
     @import("commands/command_browse.zig").COMMAND,
 };
 
-pub fn InitCore(
+pub fn CreateCore(
     allocator: Core.Allocator,
     reader: Core.Reader,
     writer: Core.Writer,

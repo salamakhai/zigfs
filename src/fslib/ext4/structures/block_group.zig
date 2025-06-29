@@ -6,7 +6,7 @@ pub const BlockGroupError = error{
     OutOfBounds,
 };
 
-pub const BlockGroup = extern struct {
+pub const Ext4BlockGroup = extern struct {
     bg_block_bitmap_lo: u32, // Blocks bitmap block
     bg_inode_bitmap_lo: u32, // Inodes bitmap block
     bg_inode_table_lo: u32, // Inodes table block
@@ -20,11 +20,11 @@ pub const BlockGroup = extern struct {
     bg_itable_unused_lo: u16, // Unused inodes count
     bg_checksum: u16, // crc16(sb_uuid+group+desc)
 
-    pub fn inodeTableBlock(self: *const BlockGroup) u32 {
+    pub fn inodeTableBlock(self: *const Ext4BlockGroup) u32 {
         return self.bg_inode_table_lo;
     }
 
-    pub fn freeInodesCount(self: *const BlockGroup) u16 {
+    pub fn freeInodesCount(self: *const Ext4BlockGroup) u16 {
         return self.bg_free_inodes_count_lo;
     }
 };
