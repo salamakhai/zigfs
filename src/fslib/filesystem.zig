@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Ext4FileSystem = @import("ext4/ext4_filesystem.zig").Ext4FileSystem;
+const Ext4FS = @import("ext4/ext4_fs.zig").Ext4FS;
 const Entry = @import("entry.zig").Entry;
 const errors = @import("errors.zig");
 
@@ -8,7 +8,7 @@ const EXT4_MAGIC_NUMBER: u16 = 0xEF53;
 
 pub const FileSystem = union(enum) {
     // Fields
-    ext4: *Ext4FileSystem,
+    ext4: *Ext4FS,
 
     // Lifecycle
     pub fn create(allocator: std.mem.Allocator, file: std.fs.File) !FileSystem {
@@ -16,7 +16,7 @@ pub const FileSystem = union(enum) {
 
         switch (magic) {
             EXT4_MAGIC_NUMBER => {
-                const ext4_fs = try Ext4FileSystem.create(allocator, file);
+                const ext4_fs = try Ext4FS.create(allocator, file);
                 return .{
                     .ext4 = ext4_fs,
                 };

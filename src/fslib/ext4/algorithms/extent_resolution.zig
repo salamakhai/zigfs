@@ -1,9 +1,10 @@
 const std = @import("std");
-const ExtentTreeLayouts = @import("../layout/extent_layout.zig").ExtentTreeLayouts;
+const extent_layout = @import("../layout/extent_layout.zig");
 
-const ExtentHeader = ExtentTreeLayouts.ExtentHeader;
-const Extent = ExtentTreeLayouts.Extent;
-const ExtentIndex = ExtentTreeLayouts.ExtentIndex;
+const ExtentTreeLayout = extent_layout.ExtentTreeLayout;
+const ExtentHeader = ExtentTreeLayout.ExtentHeader;
+const Extent = ExtentTreeLayout.Extent;
+const ExtentIndex = ExtentTreeLayout.ExtentIndex;
 
 /// Algorithms for resolving EXT4 extent trees to block mappings
 /// 
@@ -108,8 +109,8 @@ pub const ExtentResolutionAlgorithm = struct {
         const physical_start = (@as(u64, extent.ee_start_hi) << 32) | @as(u64, extent.ee_start_lo);
         
         // Check uninitialized flag (high bit of length)
-        const is_uninitialized = (extent.ee_len & ExtentTreeLayouts.EXT4_EXTENT_FLAGS.UNWRITTEN) != 0;
-        const actual_length = extent.ee_len & ~ExtentTreeLayouts.EXT4_EXTENT_FLAGS.UNWRITTEN;
+        const is_uninitialized = (extent.ee_len & ExtentTreeLayout.EXT4_EXTENT_FLAGS.UNWRITTEN) != 0;
+        const actual_length = extent.ee_len & ~ExtentTreeLayout.EXT4_EXTENT_FLAGS.UNWRITTEN;
         
         return ExtentMapping{
             .logical_start_block = extent.ee_block,

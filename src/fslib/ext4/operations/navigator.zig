@@ -109,7 +109,7 @@ pub const Navigator = struct {
             return errors.FileSystemError.NotDirectory;
         }
 
-        const dir_data = try self.reader.readInodeData(allocator, dir_inode);
+        const dir_data = try self.reader.readFileData(allocator, dir_inode);
         defer allocator.free(dir_data);
 
         var offset: usize = 0;

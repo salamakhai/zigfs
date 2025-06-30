@@ -8,82 +8,74 @@ const Reader = @import("reader.zig").Reader;
 const constants = @import("../constants.zig");
 const errors = @import("../../errors.zig");
 
-pub const Lister = struct {
+const DirectoryTraversalAlgorithm = @import("../algorithms/directory_traversal.zig").DirectoryTraversalAlgorithm;
+
+pub const DirectoryLister = struct {
     reader: *const Reader,
 
-    pub fn init(reader: *const Reader) Lister {
-        return Lister{
+    pub fn init(reader: *const Reader) DirectoryLister {
+        return DirectoryLister{
             .reader = reader,
         };
     }
 
-    pub fn listDirectory(self: *const Lister, allocator: Allocator, entry: *const Entry) ![]Entry {
+    pub fn listDirectory(self: *const DirectoryLister, allocator: Allocator, entry: *const Entry) ![]Entry {
         if (!entry.isDirectory()) {
             return errors.FileSystemError.NotDirectory;
         }
 
+        // Read directory data
         const dir_inode = try self.reader.readInode(entry.inode_number);
-        const dir_data = try self.reader.readInodeData(allocator, &dir_inode);
+        const dir_data = try self.reader.readFileData(allocator, &dir_inode);
         defer allocator.free(dir_data);
 
+        const parsed_entries = try DirectoryTraversalAlgorithm.parseDirectoryEntries(
+            dir_data,
+            allocator,
+        );
+        defer {
+            for (parsed_entries) |parsed_entry| {
+                allocator.free(parsed_entry.name);
+            }
+            allocator.free(parsed_entries);
+        }
+
+        // Convert parsed entries to filesystem entries with metadata
         var entries = std.ArrayList(Entry).init(allocator);
-        var offset: usize = 0;
 
-        while (offset < dir_data.len) {
-            if (offset + @sizeOf(Ext4Entry) > dir_data.len) {
-                break;
-            }
+        for (parsed_entries) |parsed_entry| {
+            if (parsed_entry.inode_number != 0) {
+                const owned_name = try allocator.dupe(u8, parsed_entry.name);
 
-            var dir_entry: Ext4Entry = undefined;
-            const entry_bytes = std.mem.asBytes(&dir_entry);
-            const available_bytes = @min(entry_bytes.len, dir_data.len - offset);
+                const entry_type = convertAlgorithmFileType(parsed_entry.file_type);
 
-            @memcpy(
-                entry_bytes[0..available_bytes],
-                dir_data[offset .. offset + available_bytes],
-            );
-
-            if (!dir_entry.isValid() or dir_entry.record_len == 0) {
-                break;
-            }
-
-            if (offset + dir_entry.record_len > dir_data.len) {
-                break;
-            }
-
-            if (dir_entry.inode != 0) {
-                const name = dir_entry.getName(dir_data, offset);
-                const owned_name = try allocator.dupe(u8, name);
-                
-                // Convert ext4 file type to generic entry type
-                const entry_type: EntryType = switch (dir_entry.file_type) {
-                    constants.FileType.REG_FILE => .file,
-                    constants.FileType.DIR => .directory,
-                    constants.FileType.SYMLINK => .symlink,
-                    else => .unknown,
-                };
-                
-                // Read inode to get complete metadata
-                const filesystem_entry = if (self.reader.readInode(dir_entry.inode)) |inode| Entry{
+                const filesystem_entry = if (self.reader.readInode(parsed_entry.inode_number)) |inode| Entry{
                     .name = owned_name,
                     .entry_type = entry_type,
                     .size = inode.size(),
                     .mode = inode.i_mode,
-                    .inode_number = dir_entry.inode,
+                    .inode_number = parsed_entry.inode_number,
                 } else |_| Entry{
                     .name = owned_name,
                     .entry_type = entry_type,
                     .size = 0,
                     .mode = 0,
-                    .inode_number = dir_entry.inode,
+                    .inode_number = parsed_entry.inode_number,
                 };
 
                 try entries.append(filesystem_entry);
             }
-
-            offset = dir_entry.nextEntry(offset);
         }
 
         return entries.toOwnedSlice();
+    }
+
+    fn convertAlgorithmFileType(file_type: u8) EntryType {
+        return switch (file_type) {
+            constants.FileType.REG_FILE => .file,
+            constants.FileType.DIR => .directory,
+            constants.FileType.SYMLINK => .symlink,
+            else => .unknown,
+        };
     }
 };

@@ -25,7 +25,7 @@ pub const DirectoryTraversalAlgorithm = struct {
         /// Entry name (owned by caller)
         name: []const u8,
         /// File type from directory entry
-        file_type: DirectoryEntryLayout.FILE_TYPES,
+        file_type: u8,
         /// Total record length including padding
         record_length: u16,
         /// Is this entry is valid
