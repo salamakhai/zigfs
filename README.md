@@ -46,7 +46,7 @@ Available commands:
 
 ### Browser example session
 ```sh
- % zigfs browse test/ext4_test.img
+ % ./zig-out/bin/zigfs browse test/ext4_test.img
 Opening file: test/ext4_test.img...
 Filesystem detected and mounted successfully
 
@@ -84,3 +84,6 @@ Hello, World!
 > exit
 ```
 
+### Documentation
+
+[/fslib](./src/fslib/description.md)
