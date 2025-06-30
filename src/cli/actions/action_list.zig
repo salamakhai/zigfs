@@ -85,17 +85,21 @@ fn invoke(
             .directory => "dir",
             .symlink => "link",
             .unknown => "unknown",
+            .character_device => "chardev",
+            .block_device => "blockdev",
+            .fifo => "fifo",
+            .socket => "socket",
         };
 
         var size_buffer: [32]u8 = undefined;
-        const formatted_size = formatFileSize(entry.size, &size_buffer) catch "N/A";
+        const formatted_size = formatFileSize(entry.getSize() orelse 0, &size_buffer) catch "N/A";
 
         writer.print(
             "{s:<25} {s:<10} 0x{X:0>4} {s}\n",
             .{
                 entry.name,
                 type_str,
-                entry.mode,
+                entry.getMode() orelse 0,
                 formatted_size,
             },
         ) catch {

@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const Entry = @import("../../entry.zig").Entry;
+const Entry = @import("../../entry.zig").GenericEntry;
 const Reader = @import("reader.zig").Reader;
 const errors = @import("../../errors.zig");
 

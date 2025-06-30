@@ -1,6 +1,6 @@
 const std = @import("std");
 
-/// EXT4 Directory Entry Layout
+/// EXT4 Entry Layout
 /// 
 /// This represents the raw on-disk structure of EXT4 directory entries
 /// Directory entries are variable-length records that map filenames to inodes
@@ -15,7 +15,7 @@ const std = @import("std");
 /// - Variable-length filename
 /// - File type information
 /// - Padding to maintain alignment
-pub const DirectoryEntryLayout = extern struct {
+pub const EntryLayout = extern struct {
     inode: u32,         // 0x00: Inode number (0 = unused entry)
     rec_len: u16,       // 0x04: Record length (including filename and padding)
     name_len: u8,       // 0x06: Filename length (0-255 characters)
@@ -41,7 +41,7 @@ pub const DirectoryEntryLayout = extern struct {
         /// Maximum filename length
         pub const MAX_NAME_LEN: u8 = 255;
         /// Minimum record length (must fit the base structure)
-        pub const MIN_REC_LEN: u16 = @sizeOf(DirectoryEntryLayout);
+        pub const MIN_REC_LEN: u16 = @sizeOf(EntryLayout);
         /// Record length alignment (must be multiple of 4)
         pub const REC_LEN_ALIGNMENT: u16 = 4;
     };
@@ -54,6 +54,6 @@ pub const DirectoryEntryLayout = extern struct {
     };
 
     comptime {
-        std.debug.assert(@sizeOf(DirectoryEntryLayout) == 8);
+        std.debug.assert(@sizeOf(EntryLayout) == 8);
     }
 };

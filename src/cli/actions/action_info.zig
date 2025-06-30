@@ -37,14 +37,11 @@ fn invoke(
     };
 
     writer.print("Filesystem information:\n", .{}) catch {};
-    switch (filesystem.*) {
-        .ext4 => |ext4| {
-            writer.print("  Type: ext4\n", .{}) catch {};
-            writer.print("  Block size: {} bytes\n", .{ext4.block_size}) catch {};
-            writer.print("  Total inodes: {}\n", .{ext4.superblock.layout.s_inodes_count}) catch {};
-            writer.print("  Total blocks: {}\n", .{ext4.superblock.layout.s_blocks_count_lo}) catch {};
-            writer.print("  Free blocks: {}\n", .{ext4.superblock.layout.s_free_blocks_count_lo}) catch {};
-            writer.print("  Free inodes: {}\n", .{ext4.superblock.layout.s_free_inodes_count}) catch {};
-        },
-    }
+    const info = filesystem.getInfo();
+    writer.print("  Type: {s}\n", .{info.fs_type}) catch {};
+    writer.print("  Block size: {} bytes\n", .{info.block_size}) catch {};
+    writer.print("  Total size: {} bytes\n", .{info.total_size}) catch {};
+    writer.print("  Free size: {?} bytes\n", .{info.free_size}) catch {};
+    writer.print("  Total entries: {?}\n", .{info.total_entries}) catch {};
+    writer.print("  Free entries: {?}\n", .{info.free_entries}) catch {};
 }

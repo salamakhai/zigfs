@@ -1,5 +1,5 @@
 const std = @import("std");
-const DirectoryEntryLayout = @import("../layout/directory_entry_layout.zig").DirectoryEntryLayout;
+const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
 
 /// Algorithms for traversing EXT4 directory structures
 /// 
@@ -35,12 +35,12 @@ pub const DirectoryTraversalAlgorithm = struct {
         
         /// Check if this is the current directory entry (".")
         pub fn isCurrentDirectory(self: ParsedDirectoryEntry) bool {
-            return std.mem.eql(u8, self.name, DirectoryEntryLayout.SPECIAL_ENTRIES.CURRENT_DIR);
+            return std.mem.eql(u8, self.name, EntryLayout.SPECIAL_ENTRIES.CURRENT_DIR);
         }
         
         /// Check if this is the parent directory entry ("..")
         pub fn isParentDirectory(self: ParsedDirectoryEntry) bool {
-            return std.mem.eql(u8, self.name, DirectoryEntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
+            return std.mem.eql(u8, self.name, EntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
         }
     };
     
@@ -61,7 +61,7 @@ pub const DirectoryTraversalAlgorithm = struct {
             while (self.offset < self.data.len) {
                 const entry = parseDirectoryEntryAt(self.data, self.offset, allocator) catch {
                     // Skip invalid entries and continue
-                    self.offset += DirectoryEntryLayout.CONSTRAINTS.MIN_REC_LEN;
+                    self.offset += EntryLayout.CONSTRAINTS.MIN_REC_LEN;
                     continue;
                 };
                 
@@ -103,12 +103,12 @@ pub const DirectoryTraversalAlgorithm = struct {
         allocator: std.mem.Allocator,
     ) !?ParsedDirectoryEntry {
         // Ensure is enough data for the basic directory entry structure
-        if (offset + @sizeOf(DirectoryEntryLayout) > directory_data.len) {
+        if (offset + @sizeOf(EntryLayout) > directory_data.len) {
             return null;
         }
         
         // Parse the directory entry header
-        const entry_layout = @as(*const DirectoryEntryLayout, @ptrCast(@alignCast(
+        const entry_layout = @as(*const EntryLayout, @ptrCast(@alignCast(
             &directory_data[offset]
         )));
         
@@ -118,7 +118,7 @@ pub const DirectoryTraversalAlgorithm = struct {
         }
         
         // Extract the filename
-        const name_start = offset + @sizeOf(DirectoryEntryLayout);
+        const name_start = offset + @sizeOf(EntryLayout);
         const name_end = name_start + entry_layout.name_len;
         
         if (name_end > directory_data.len) {
@@ -160,20 +160,20 @@ pub const DirectoryTraversalAlgorithm = struct {
     }
 
     pub fn isValidDirectoryEntry(
-        entry: *const DirectoryEntryLayout,
+        entry: *const EntryLayout,
         available_data: usize,
     ) bool {
         // Check basic constraints
-        if (entry.rec_len < DirectoryEntryLayout.CONSTRAINTS.MIN_REC_LEN) {
+        if (entry.rec_len < EntryLayout.CONSTRAINTS.MIN_REC_LEN) {
             return false;
         }
         
-        if (entry.name_len > DirectoryEntryLayout.CONSTRAINTS.MAX_NAME_LEN) {
+        if (entry.name_len > EntryLayout.CONSTRAINTS.MAX_NAME_LEN) {
             return false;
         }
         
         // Record length must be aligned
-        if (entry.rec_len % DirectoryEntryLayout.CONSTRAINTS.REC_LEN_ALIGNMENT != 0) {
+        if (entry.rec_len % EntryLayout.CONSTRAINTS.REC_LEN_ALIGNMENT != 0) {
             return false;
         }
         
@@ -183,7 +183,7 @@ pub const DirectoryTraversalAlgorithm = struct {
         }
         
         // Name must fit within record length
-        const name_space_needed = @sizeOf(DirectoryEntryLayout) + entry.name_len;
+        const name_space_needed = @sizeOf(EntryLayout) + entry.name_len;
         if (name_space_needed > entry.rec_len) {
             return false;
         }
@@ -192,19 +192,19 @@ pub const DirectoryTraversalAlgorithm = struct {
     }
 
     pub fn isSpecialDirectoryEntry(name: []const u8) bool {
-        return std.mem.eql(u8, name, DirectoryEntryLayout.SPECIAL_ENTRIES.CURRENT_DIR) or
-               std.mem.eql(u8, name, DirectoryEntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
+        return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.CURRENT_DIR) or
+               std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
     }
 
     pub fn convertFileType(ext4_file_type: u8) FileType {
         return switch (ext4_file_type) {
-            DirectoryEntryLayout.FILE_TYPES.REG_FILE => .regular_file,
-            DirectoryEntryLayout.FILE_TYPES.DIR => .directory,
-            DirectoryEntryLayout.FILE_TYPES.SYMLINK => .symbolic_link,
-            DirectoryEntryLayout.FILE_TYPES.CHRDEV => .character_device,
-            DirectoryEntryLayout.FILE_TYPES.BLKDEV => .block_device,
-            DirectoryEntryLayout.FILE_TYPES.FIFO => .fifo,
-            DirectoryEntryLayout.FILE_TYPES.SOCK => .socket,
+            EntryLayout.FILE_TYPES.REG_FILE => .regular_file,
+            EntryLayout.FILE_TYPES.DIR => .directory,
+            EntryLayout.FILE_TYPES.SYMLINK => .symbolic_link,
+            EntryLayout.FILE_TYPES.CHRDEV => .character_device,
+            EntryLayout.FILE_TYPES.BLKDEV => .block_device,
+            EntryLayout.FILE_TYPES.FIFO => .fifo,
+            EntryLayout.FILE_TYPES.SOCK => .socket,
             else => .unknown,
         };
     }
@@ -229,12 +229,12 @@ pub const DirectoryTraversalAlgorithm = struct {
         var offset: usize = 0;
         
         while (offset < directory_data.len) {
-            if (offset + @sizeOf(DirectoryEntryLayout) > directory_data.len) {
+            if (offset + @sizeOf(EntryLayout) > directory_data.len) {
                 return false;
             }
             
             const entry = @as(
-                *const DirectoryEntryLayout,
+                *const EntryLayout,
                 @ptrCast(@alignCast(&directory_data[offset]))
             );
             

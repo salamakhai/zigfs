@@ -1,9 +1,8 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const Ext4Entry = @import("../structures/entry.zig").Entry;
-const Entry = @import("../../entry.zig").Entry;
-const EntryType = @import("../../entry.zig").EntryType;
+const Entry = @import("../structures/entry.zig").Entry;
+const FilesystemEntry = @import("../structures/filesystem_entry.zig").FilesystemEntry;
 const Reader = @import("reader.zig").Reader;
 const constants = @import("../constants.zig");
 const errors = @import("../../errors.zig");
@@ -25,14 +24,22 @@ pub const DirectoryLister = struct {
         }
 
         // Read directory data
-        const dir_inode = try self.reader.readInode(entry.inode_number);
-        const dir_data = try self.reader.readFileData(allocator, &dir_inode);
+        const dir_inode = try self.reader.readInode(
+            @intCast(entry.getFilesystemId() orelse return errors.FileSystemError.EntryNotFound),
+        );
+
+        const dir_data = try self.reader.readFileData(
+            allocator,
+            &dir_inode,
+        );
+
         defer allocator.free(dir_data);
 
         const parsed_entries = try DirectoryTraversalAlgorithm.parseDirectoryEntries(
             dir_data,
             allocator,
         );
+
         defer {
             for (parsed_entries) |parsed_entry| {
                 allocator.free(parsed_entry.name);
@@ -40,7 +47,6 @@ pub const DirectoryLister = struct {
             allocator.free(parsed_entries);
         }
 
-        // Convert parsed entries to filesystem entries with metadata
         var entries = std.ArrayList(Entry).init(allocator);
 
         for (parsed_entries) |parsed_entry| {
@@ -52,15 +58,25 @@ pub const DirectoryLister = struct {
                 const filesystem_entry = if (self.reader.readInode(parsed_entry.inode_number)) |inode| Entry{
                     .name = owned_name,
                     .entry_type = entry_type,
-                    .size = inode.size(),
-                    .mode = inode.i_mode,
-                    .inode_number = parsed_entry.inode_number,
+                    .metadata = .{
+                        .size = inode.size(),
+                        .mode = inode.i_mode,
+                        .filesystem_id = parsed_entry.inode_number,
+                        .created_time = null,
+                        .modified_time = null,
+                        .accessed_time = null,
+                    },
                 } else |_| Entry{
                     .name = owned_name,
                     .entry_type = entry_type,
-                    .size = 0,
-                    .mode = 0,
-                    .inode_number = parsed_entry.inode_number,
+                    .metadata = .{
+                        .size = 0,
+                        .mode = 0,
+                        .filesystem_id = parsed_entry.inode_number,
+                        .created_time = null,
+                        .modified_time = null,
+                        .accessed_time = null,
+                    },
                 };
 
                 try entries.append(filesystem_entry);
@@ -68,14 +84,5 @@ pub const DirectoryLister = struct {
         }
 
         return entries.toOwnedSlice();
-    }
-
-    fn convertAlgorithmFileType(file_type: u8) EntryType {
-        return switch (file_type) {
-            constants.FileType.REG_FILE => .file,
-            constants.FileType.DIR => .directory,
-            constants.FileType.SYMLINK => .symlink,
-            else => .unknown,
-        };
     }
 };

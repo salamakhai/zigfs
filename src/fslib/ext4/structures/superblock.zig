@@ -3,12 +3,11 @@ const errors = @import("../../errors.zig");
 const SuperblockLayout = @import("../layout/superblock_layout.zig").SuperblockLayout;
 const SuperblockValidationAlgorithm = @import("../algorithms/superblock_validation.zig").SuperblockValidationAlgorithm;
 
-// Temp reexports
-pub const EXT4_SUPER_MAGIC: u16 = SuperblockLayout.MAGIC_NUMBER;
-pub const SUPERBLOCK_OFFSET: u64 = SuperblockLayout.OFFSET_IN_DEVICE;
-pub const EXT4_MIN_BLOCK_SIZE: u32 = SuperblockLayout.MIN_BLOCK_SIZE;
-pub const EXT4_MAX_BLOCK_SIZE: u32 = SuperblockLayout.MAX_BLOCK_SIZE;
-pub const EXT4_DEFAULT_BLOCK_SIZE: u32 = SuperblockLayout.DEFAULT_BLOCK_SIZE;
+const EXT4_SUPER_MAGIC: u16 = SuperblockLayout.MAGIC_NUMBER;
+const SUPERBLOCK_OFFSET: u64 = SuperblockLayout.OFFSET_IN_DEVICE;
+const EXT4_MIN_BLOCK_SIZE: u32 = SuperblockLayout.MIN_BLOCK_SIZE;
+const EXT4_MAX_BLOCK_SIZE: u32 = SuperblockLayout.MAX_BLOCK_SIZE;
+const EXT4_DEFAULT_BLOCK_SIZE: u32 = SuperblockLayout.DEFAULT_BLOCK_SIZE;
 
 pub const SuperblockError = error{
     ReadError,
@@ -42,6 +41,10 @@ pub const Superblock = struct {
     pub fn blockSize(self: *const Superblock) u32 {
         const validation_result = SuperblockValidationAlgorithm.validateBlockSize(&self.layout);
         return validation_result.block_size;
+    }
+
+    pub fn isValid(self: *const Superblock) bool {
+        _ = self;
     }
 
     pub fn validate(

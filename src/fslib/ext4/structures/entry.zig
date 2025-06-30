@@ -1,16 +1,13 @@
 const std = @import("std");
-const constants = @import("../constants.zig");
 
-/// Represents the on-disk format of directory entries in ext4
+const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
+
 pub const Entry = extern struct {
-    inode: u32, // Inode number
-    record_len: u16, // Record length (includes padding)
-    name_len: u8, // Name length
-    file_type: u8, // File type (EXT4_FT_{type})
+    layout: EntryLayout,
 
     pub fn getName(self: *const Entry, data: []const u8, offset: usize) []const u8 {
         const name_start = offset + @sizeOf(Entry);
-        const name_end = name_start + self.name_len;
+        const name_end = name_start + self.layout.name_len;
         if (name_end <= data.len) {
             return data[name_start..name_end];
         }
@@ -18,13 +15,54 @@ pub const Entry = extern struct {
     }
 
     pub fn isValid(self: *const Entry) bool {
-        return self.inode != 0 and
-            self.record_len >= @sizeOf(Entry) and
-            self.name_len > 0 and
-            self.name_len <= 255;
+        return self.layout.inode != 0 and
+            self.layout.rec_len >= @sizeOf(Entry) and
+            self.layout.name_len > 0 and
+            self.layout.name_len <= EntryLayout.CONSTRAINTS.MAX_NAME_LEN;
     }
 
+    /// Get the offset of the next entry
     pub fn nextEntry(self: *const Entry, current_offset: usize) usize {
-        return current_offset + self.record_len;
+        return current_offset + self.layout.rec_len;
+    }
+
+    pub fn getFileType(self: *const Entry) u8 {
+        return self.layout.file_type;
+    }
+
+    pub fn getInodeNumber(self: *const Entry) u32 {
+        return self.layout.inode;
+    }
+
+    pub fn getRecordLength(self: *const Entry) u16 {
+        return self.layout.rec_len;
+    }
+
+    pub fn getNameLength(self: *const Entry) u8 {
+        return self.layout.name_len;
+    }
+
+    /// Check if this is (".")
+    pub fn isCurrentDirectory(self: *const Entry, data: []const u8, offset: usize) bool {
+        const name = self.getName(data, offset);
+        return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.CURRENT_DIR);
+    }
+
+    /// Check if this is ("..")
+    pub fn isParentDirectory(self: *const Entry, data: []const u8, offset: usize) bool {
+        const name = self.getName(data, offset);
+        return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
+    }
+
+    pub fn isDirectory(self: *const Entry) bool {
+        return self.layout.file_type == EntryLayout.FILE_TYPES.DIR;
+    }
+
+    pub fn isFile(self: *const Entry) bool {
+        return self.layout.file_type == EntryLayout.FILE_TYPES.REG_FILE;
+    }
+
+    pub fn isSymlink(self: *const Entry) bool {
+        return self.layout.file_type == EntryLayout.FILE_TYPES.SYMLINK;
     }
 };

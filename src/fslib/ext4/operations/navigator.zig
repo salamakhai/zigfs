@@ -2,9 +2,8 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const Inode = @import("../structures/inode.zig").Inode;
-const Ext4Entry = @import("../structures/entry.zig").Entry;
-const Entry = @import("../../entry.zig").Entry;
-const EntryType = @import("../../entry.zig").EntryType;
+const Entry = @import("../structures/entry.zig").Entry;
+const FilesystemEntry = @import("../structures/filesystem_entry.zig").FilesystemEntry;
 const Reader = @import("reader.zig").Reader;
 const errors = @import("../../errors.zig");
 
@@ -21,20 +20,26 @@ pub const Navigator = struct {
         return self.reader.readInode(2);
     }
 
-    pub fn getRootEntry(self: *const Navigator, allocator: Allocator) !Entry {
+    pub fn getRootEntry(self: *const Navigator, allocator: Allocator) !FilesystemEntry {
         const root_inode = try self.getRootInode();
         const root_name = try allocator.dupe(u8, "/");
+        
+        const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
+        const file_type = if (root_inode.isDirectory()) 
+            EntryLayout.FILE_TYPES.DIR 
+        else 
+            EntryLayout.FILE_TYPES.REG_FILE;
 
-        return Entry{
+        return FilesystemEntry{
             .name = root_name,
-            .entry_type = if (root_inode.isDirectory()) .directory else .file,
+            .inode_number = 2,
             .size = root_inode.size(),
             .mode = root_inode.i_mode,
-            .inode_number = 2,
+            .ext4_file_type = file_type,
         };
     }
 
-    pub fn getEntry(self: *const Navigator, allocator: Allocator, path: []const u8) !Entry {
+    pub fn getEntry(self: *const Navigator, allocator: Allocator, path: []const u8) !FilesystemEntry {
         if (std.mem.eql(u8, path, "/") or path.len == 0) {
             return self.getRootEntry(allocator);
         }
@@ -85,22 +90,22 @@ pub const Navigator = struct {
             current_name = try allocator.dupe(u8, component);
         }
 
-        const entry_type: EntryType =
-            if (current_inode.isDirectory())
-                .directory
-            else if (current_inode.isRegularFile())
-                .file
-            else if (current_inode.isSymlink())
-                .symlink
-            else
-                .unknown;
+        const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
+        const file_type = if (current_inode.isDirectory())
+            EntryLayout.FILE_TYPES.DIR
+        else if (current_inode.isRegularFile())
+            EntryLayout.FILE_TYPES.REG_FILE
+        else if (current_inode.isSymlink())
+            EntryLayout.FILE_TYPES.SYMLINK
+        else
+            EntryLayout.FILE_TYPES.UNKNOWN;
 
-        return Entry{
+        return FilesystemEntry{
             .name = current_name,
-            .entry_type = entry_type,
+            .inode_number = current_inode_number,
             .size = current_inode.size(),
             .mode = current_inode.i_mode,
-            .inode_number = current_inode_number,
+            .ext4_file_type = file_type,
         };
     }
 
@@ -114,27 +119,27 @@ pub const Navigator = struct {
 
         var offset: usize = 0;
         while (offset < dir_data.len) {
-            if (offset + @sizeOf(Ext4Entry) > dir_data.len) {
+            if (offset + @sizeOf(Entry) > dir_data.len) {
                 break;
             }
 
-            var dir_entry: Ext4Entry = undefined;
+            var dir_entry: Entry = undefined;
             const entry_bytes = std.mem.asBytes(&dir_entry);
             const available_bytes = @min(entry_bytes.len, dir_data.len - offset);
             @memcpy(entry_bytes[0..available_bytes], dir_data[offset .. offset + available_bytes]);
 
-            if (!dir_entry.isValid() or dir_entry.record_len == 0) {
+            if (!dir_entry.isValid() or dir_entry.getRecordLength() == 0) {
                 break;
             }
 
-            if (offset + dir_entry.record_len > dir_data.len) {
+            if (offset + dir_entry.getRecordLength() > dir_data.len) {
                 break;
             }
 
-            if (dir_entry.inode != 0) {
+            if (dir_entry.getInodeNumber() != 0) {
                 const name = dir_entry.getName(dir_data, offset);
                 if (std.mem.eql(u8, name, entry_name)) {
-                    return dir_entry.inode;
+                    return dir_entry.getInodeNumber();
                 }
             }
 

@@ -1,4 +1,4 @@
-pub const FileSystemError = error{
+pub const FilesystemError = error{
     UnsupportedFormat,
     InvalidFileSystem,
     ReadError,
