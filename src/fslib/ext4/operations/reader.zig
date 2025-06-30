@@ -27,8 +27,8 @@ pub const Reader = struct {
             return errors.FileSystemError.ReadError;
         }
 
-        const group_number = (inode_number - 1) / self.superblock.s_inodes_per_group;
-        const inode_index = (inode_number - 1) % self.superblock.s_inodes_per_group;
+        const group_number = (inode_number - 1) / self.superblock.layout.s_inodes_per_group;
+        const inode_index = (inode_number - 1) % self.superblock.layout.s_inodes_per_group;
 
         const bgd_table_block = if (self.block_size == 1024) @as(u64, 2) else @as(u64, 1);
         const bgd_offset = (bgd_table_block * self.block_size) + (group_number * @sizeOf(BlockGroup));
@@ -41,7 +41,7 @@ pub const Reader = struct {
         }
 
         const inode_table_block = bgd.inodeTableBlock();
-        const inode_size = if (self.superblock.s_rev_level >= 1) @as(u32, 256) else @as(u32, 128);
+        const inode_size = if (self.superblock.layout.s_rev_level >= 1) @as(u32, 256) else @as(u32, 128);
         const inode_offset = (inode_table_block * self.block_size) + (inode_index * inode_size);
 
         try self.file.seekTo(inode_offset);

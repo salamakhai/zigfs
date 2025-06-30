@@ -41,10 +41,10 @@ fn invoke(
         .ext4 => |ext4| {
             writer.print("  Type: ext4\n", .{}) catch {};
             writer.print("  Block size: {} bytes\n", .{ext4.block_size}) catch {};
-            writer.print("  Total inodes: {}\n", .{ext4.superblock.s_inodes_count}) catch {};
-            writer.print("  Total blocks: {}\n", .{ext4.superblock.s_blocks_count_lo}) catch {};
-            writer.print("  Free blocks: {}\n", .{ext4.superblock.s_free_blocks_count_lo}) catch {};
-            writer.print("  Free inodes: {}\n", .{ext4.superblock.s_free_inodes_count}) catch {};
+            writer.print("  Total inodes: {}\n", .{ext4.superblock.layout.s_inodes_count}) catch {};
+            writer.print("  Total blocks: {}\n", .{ext4.superblock.layout.s_blocks_count_lo}) catch {};
+            writer.print("  Free blocks: {}\n", .{ext4.superblock.layout.s_free_blocks_count_lo}) catch {};
+            writer.print("  Free inodes: {}\n", .{ext4.superblock.layout.s_free_inodes_count}) catch {};
         },
     }
 }
