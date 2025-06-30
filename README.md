@@ -57,11 +57,6 @@ Available commands:
   ls           - List directory contents
   exit/quit    - Exit the browser
 
-> cat hello.txt
-
-Content of 'hello.txt' (14 bytes):
-Hello, World!
-
 > ls
 
 Contents of '/':
@@ -80,6 +75,11 @@ test_data                 dir        0x41ED 4.0 KB
 hello.txt                 file       0x81A4 14 B
 
 Total: 11 entries
+
+> cat hello.txt
+
+Content of 'hello.txt' (14 bytes):
+Hello, World!
 
 > exit
 ```
