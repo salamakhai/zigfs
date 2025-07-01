@@ -4,13 +4,13 @@ const Allocator = std.mem.Allocator;
 
 const Reader = @import("operations/reader.zig").Reader;
 const Navigator = @import("operations/navigator.zig").Navigator;
-const DirectoryLister = @import("operations/lister.zig").DirectoryLister;
-const FileExtractor = @import("operations/extractor.zig").FileExtractor;
+const Lister = @import("operations/lister.zig").Lister;
 
 pub const Ext4Fs = struct {
     // Types
     pub const Superblock = @import("structures/superblock.zig").Superblock;
     pub const Entry = @import("structures/entry.zig").Entry;
+    pub const Error = @import("type_error.zig").Error;
 
     // Vaiables
     file: fs.File,
@@ -22,12 +22,11 @@ pub const Ext4Fs = struct {
     // Operations
     reader: Reader,
     navigator: Navigator,
-    lister: DirectoryLister,
-    extractor: FileExtractor,
+    lister: Lister,
 
     // Lifecycle
     pub fn create(allocator: Allocator, file: fs.File) !*Ext4Fs {
-        const superblock = try Superblock.fromFile(file);
+        const superblock = try Superblock.create(file);
         const filesystem = try allocator.create(Ext4Fs);
 
         filesystem.* = Ext4Fs{
@@ -40,10 +39,9 @@ pub const Ext4Fs = struct {
             .extractor = undefined,
         };
 
-        filesystem.reader = Reader.init(file, &filesystem.superblock);
-        filesystem.navigator = Navigator.init(&filesystem.reader);
-        filesystem.lister = DirectoryLister.init(&filesystem.reader);
-        filesystem.extractor = FileExtractor.init(&filesystem.reader);
+        filesystem.reader = Reader.init(allocator, file, &filesystem.superblock);
+        filesystem.navigator = Navigator.init(allocator, &filesystem.reader);
+        filesystem.lister = Lister.init(allocator, &filesystem.reader);
 
         return filesystem;
     }

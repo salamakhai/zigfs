@@ -9,9 +9,10 @@
 ### /structures 
 - wrappers for layout data, contains functions data convertion
 and higher level data representation;
+- can use algorithms
 
 ### /operations
-- can use algorithms, layouts, structures,
+- can use layouts, structures,
 - logic for high level operations on ext4 filesystem,
 - public functions should not expose internal layouts,
 - operate publicly only on structures

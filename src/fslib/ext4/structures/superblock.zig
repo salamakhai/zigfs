@@ -1,5 +1,4 @@
 const std = @import("std");
-const errors = @import("../../errors.zig");
 const SuperblockLayout = @import("../layout/superblock_layout.zig").SuperblockLayout;
 const SuperblockValidationAlgorithm = @import("../algorithms/superblock_validation.zig").SuperblockValidationAlgorithm;
 
@@ -23,7 +22,7 @@ pub const SuperblockError = error{
 pub const Superblock = struct {
     layout: SuperblockLayout,
 
-    pub fn fromFile(file: std.fs.File) anyerror!Superblock {
+    pub fn create(file: std.fs.File) anyerror!Superblock {
         try file.seekTo(SUPERBLOCK_OFFSET);
 
         var layout: SuperblockLayout = undefined;

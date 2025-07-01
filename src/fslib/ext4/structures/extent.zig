@@ -3,10 +3,11 @@ const std = @import("std");
 const extent_layout = @import("../layout/extent_layout.zig");
 
 const ExtentTreeLayout = extent_layout.ExtentTreeLayout;
-const EXTENT_CONSTANTS = ExtentTreeLayout.EXTENT_CONSTANTS;
 const ExtentHeaderLayout = ExtentTreeLayout.ExtentHeader;
 const ExtentLayout = ExtentTreeLayout.Extent;
 const ExtentIndexLayout = ExtentTreeLayout.ExtentIndex;
+
+const EXTENT_CONSTANTS = ExtentTreeLayout.EXTENT_CONSTANTS;
 
 pub const ExtentHeader = extern struct {
     layout: ExtentHeaderLayout,
@@ -16,7 +17,7 @@ pub const ExtentHeader = extern struct {
     }
 
     pub fn isLeaf(self: *const ExtentHeader) bool {
-        return self.eh_depth == 0;
+        return self.layout.eh_depth == 0;
     }
 };
 
