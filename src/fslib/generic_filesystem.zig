@@ -21,7 +21,7 @@ pub const GenericFilesystem = struct {
     /// Called when the generic filesystem is being destroyed
     onDestroy: *const fn(context: *anyopaque) void,
 
-    pub const FilesystemInfo = extern struct {
+    pub const FilesystemInfo = struct {
         fs_type: []const u8,
         block_size: u32,
         total_size: u64,
@@ -39,18 +39,14 @@ pub const GenericFilesystem = struct {
     ) !GenericFilesystem {
 
         if (ext4.detect(file)) {
-            const ext4_impl = try ext4.create(allocator, file);
-            return GenericFilesystem{
-                .operations = ext4_impl.operations,
-                .info = ext4_impl.info,
-            };
+            return try ext4.create(allocator, file);
         }
 
         return error.UnsupportedFilesystem;
     }
 
     pub fn destroy(self: *GenericFilesystem) void {
-        self.onDestroy(self.operations.context);
+        self.onDestroy(self.context);
     }
 
     // Public
@@ -59,19 +55,19 @@ pub const GenericFilesystem = struct {
     }
 
     pub fn getRootEntry(self: *const GenericFilesystem, allocator: Allocator) !GenericEntry {
-        return self.operations.get_root_entry(self.operations.context, allocator);
+        return self.get_root_entry(self.context, allocator);
     }
 
     pub fn getPathEntry(self: *const GenericFilesystem, allocator: Allocator, path: []const u8) !GenericEntry {
-        return self.operations.get_path_entry(self.operations.context, allocator, path);
+        return self.get_path_entry(self.context, allocator, path);
     }
 
     pub fn listDirectory(self: *const GenericFilesystem, allocator: Allocator, path: []const u8) ![]GenericEntry {
-        return self.list_directory(self.operations.context, allocator, path);
+        return self.list_directory(self.context, allocator, path);
     }
 
     pub fn readFile(self: *const GenericFilesystem, allocator: Allocator, path: []const u8) ![]u8 {
-        return self.read_file(self.operations.context, allocator, path);
+        return self.read_file(self.context, allocator, path);
     }
 
     pub fn readEntryAsFile(self: *const GenericFilesystem, allocator: Allocator, entry: *const GenericEntry) ![]u8 {

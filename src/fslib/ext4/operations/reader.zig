@@ -13,12 +13,15 @@ const Extent = @import("../structures/extent.zig").Extent;
 const InodeLocationAlgorithm = @import("../algorithms/inode_location.zig").InodeLocationAlgorithm;
 const ExtentResolutionAlgorithm = @import("../algorithms/extent_resolution.zig").ExtentResolutionAlgorithm;
 
+/// Low-level block and inode reading
 pub const Reader = struct {
+    // === Variables ===
     allocator: Allocator,
     file: fs.File,
     superblock: *const Superblock,
     block_size: u32,
 
+    // === Lifecycle ===
     pub fn init(
         allocator: Allocator,
         file: fs.File,
@@ -32,8 +35,7 @@ pub const Reader = struct {
         };
     }
 
-    // ========= Public =========
-
+    // === Public ===
     pub fn readInode(self: *const Reader, inode_number: u32) !Inode {
         if (inode_number == 0) {
             return FilesystemError.ReadError;
@@ -54,27 +56,26 @@ pub const Reader = struct {
             self.block_size,
         );
 
-        // Read inode at calculated location
         return self.readInodeAt(inode_offset);
     }
 
-    pub fn readFileData(self: *const Reader, inode: *const Inode) ![]u8 {
-        const file_size = inode.size();
+    pub fn readInodeData(self: *const Reader, inode: *const Inode) ![]u8 {
+        const data_size = inode.size();
 
-        if (file_size == 0) {
+        if (data_size == 0) {
             return try self.allocator.alloc(u8, 0);
         }
 
-        const data = try self.allocator.alloc(u8, @intCast(file_size));
-        try self.readFileContentUsingExtents(data, inode);
+        const data = try self.allocator.alloc(u8, @intCast(data_size));
+        try self.readFileContentWithExtents(data, inode);
 
         return data;
     }
 
-    // ========= Private =========
-
-    fn readFileContentUsingExtents(self: *const Reader, data: []u8, inode: *const Inode) !void {
-        const extent_data = std.mem.asBytes(&inode.i_block);
+    // ==== Private ===
+    fn readFileContentWithExtents(self: *const Reader, data: []u8, inode: *const Inode) !void {
+        const block_data = inode.blockData();
+        const extent_data = std.mem.asBytes(&block_data);
 
         const header = ExtentResolutionAlgorithm.parseExtentHeader(extent_data) orelse {
             return FilesystemError.ReadError;

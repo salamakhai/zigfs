@@ -43,7 +43,14 @@ pub const Superblock = struct {
     }
 
     pub fn isValid(self: *const Superblock) bool {
-        _ = self;
+        // Check basic EXT4 magic number
+        if (self.layout.s_magic != SuperblockLayout.MAGIC_NUMBER) {
+            return false;
+        }
+        
+        // Check if it's a valid block size
+        const block_size = self.blockSize();
+        return block_size >= 1024 and block_size <= 65536 and (block_size & (block_size - 1)) == 0;
     }
 
     pub fn validate(
