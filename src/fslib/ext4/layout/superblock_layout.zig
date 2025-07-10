@@ -15,7 +15,7 @@ const std = @import("std");
 /// - Feature flags and compatibility information
 /// - Timestamps and mount statistics
 /// - Journaling configuration (not implemented)
-pub const SuperblockLayout = packed struct {
+pub const SuperblockLayout = extern struct {
     // Basic filesystem counters (0x00-0x13)
     s_inodes_count: u32,        // 0x00: Total inode count
     s_blocks_count_lo: u32,     // 0x04: Total block count (lower 32-bits)
