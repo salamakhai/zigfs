@@ -20,7 +20,20 @@ pub const SuperblockError = error{
 };
 
 pub const Superblock = struct {
+    // Variables
     layout: SuperblockLayout,
+
+    // Lifecycle
+    pub fn detect(file: std.fs.File) bool {
+        file.seekTo(SuperblockLayout.OFFSET_IN_DEVICE + @offsetOf(SuperblockLayout, "s_magic")) catch {
+            return false;
+        };
+        
+        var magic: u16 = undefined;
+        const bytes_read = file.readAll(std.mem.asBytes(&magic)) catch return false;
+
+        return bytes_read == @sizeOf(u16) and magic == SuperblockLayout.MAGIC_NUMBER;
+    }
 
     pub fn create(file: std.fs.File) anyerror!Superblock {
         try file.seekTo(SUPERBLOCK_OFFSET);
@@ -37,6 +50,7 @@ pub const Superblock = struct {
         };
     }
 
+    // Public
     pub fn blockSize(self: *const Superblock) u32 {
         const validation_result = SuperblockValidationAlgorithm.validateBlockSize(&self.layout);
         return validation_result.block_size;

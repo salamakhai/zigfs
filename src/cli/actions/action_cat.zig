@@ -1,8 +1,8 @@
 const std = @import("std");
 
 const fslib = @import("fslib");
-const FileSystemError = fslib.FileSystemError;
 const FileSystem = fslib.FileSystem;
+const Ext4 = FileSystem.Ext4;
 
 const Core = @import("../core/core.zig").Core;
 const Action = Core.Action;
@@ -40,7 +40,12 @@ fn invoke(
         return ActionError.InvalidPath;
     };
 
-    const file_entry = filesystem.getPathEntry(
+    const ext4_fs = filesystem.get(Ext4) catch {
+        writer.print("Error: Unsupported filesystem type\n", .{}) catch {};
+        return ActionError.UnsupportedFormat;
+    };
+
+    const file_entry = ext4_fs.getEntry(
         allocator,
         file_path,
     ) catch |err| {
@@ -55,14 +60,13 @@ fn invoke(
             },
         }
     };
-    defer allocator.free(file_entry.name);
 
     if (!file_entry.isFile()) {
         writer.print("Error: '{s}' is not a file\n", .{file_path}) catch {};
         return ActionError.NotFile;
     }
 
-    const file_data = filesystem.readEntryAsFile(allocator, &file_entry) catch |err| {
+    const file_data = ext4_fs.extractFile(&file_entry) catch |err| {
         writer.print("Error reading file '{s}': {!}\n", .{ file_path, err }) catch {};
         return ActionError.ReadError;
     };

@@ -2,14 +2,14 @@ const std = @import("std");
 const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
 
 pub const Entry = struct {
-    // === Variables ===
+    // Variables
     layout: EntryLayout,
     name: ?[]const u8 = null,
 
-    // === Types ===
+    // Types
     pub const FileType = EntryLayout.FILE_TYPES;
 
-    // === Lifecycle ===
+    // Lifecycle
     pub fn fromLayout(layout: EntryLayout) Entry {
         return Entry{ .layout = layout };
     }
@@ -26,7 +26,7 @@ pub const Entry = struct {
         };
     }
 
-    // === Properties ===
+    // Properties
     pub fn inodeNumber(self: *const Entry) u32 {
         return self.layout.inode;
     }
@@ -43,7 +43,7 @@ pub const Entry = struct {
         return self.layout.file_type;
     }
 
-    // === Type Checking ===
+    // Type Checking
     pub fn isDirectory(self: *const Entry) bool {
         return self.layout.file_type == EntryLayout.FILE_TYPES.DIR;
     }
@@ -76,7 +76,7 @@ pub const Entry = struct {
         return self.isCharacterDevice() or self.isBlockDevice();
     }
 
-    // === Validation ===
+    // Validation
     pub fn isValid(self: *const Entry) bool {
         return self.layout.inode != 0 and
             self.layout.rec_len >= @sizeOf(EntryLayout) and
@@ -105,7 +105,7 @@ pub const Entry = struct {
         return self.isCurrentDirectory(data, offset) or self.isParentDirectory(data, offset);
     }
 
-    // === Utils ===
+    // Utils
     pub fn nextEntryOffset(self: *const Entry, current_offset: usize) usize {
         return current_offset + self.recordLength();
     }
@@ -120,7 +120,7 @@ pub const Entry = struct {
         return (self.layout.rec_len % EntryLayout.CONSTRAINTS.REC_LEN_ALIGNMENT) == 0;
     }
 
-    // === Comparison ===
+    // Comparison
     pub fn eql(self: *const Entry, other: *const Entry) bool {
         return self.layout.inode == other.layout.inode;
     }
@@ -130,7 +130,7 @@ pub const Entry = struct {
         return std.mem.eql(u8, name, target_name);
     }
 
-    // === Debug ===
+    // Debug
     pub fn format(
         self: *const Entry,
         comptime fmt: []const u8,

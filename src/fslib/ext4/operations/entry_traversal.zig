@@ -125,10 +125,8 @@ pub const EntryTraversal = struct {
         for (entries) |entry| {
             if (entry.name) |name| {
                 if (std.mem.eql(u8, name, target_name)) {
-                    // Return a copy with owned name
                     return Entry{
                         .layout = entry.layout,
-                        .name = try allocator.dupe(u8, name),
                     };
                 }
             }

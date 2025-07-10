@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const fslib = @import("fslib");
-const FileSystemError = fslib.FileSystemError;
 const FileSystem = fslib.FileSystem;
 
 const Core = @import("../core/core.zig").Core;
@@ -59,7 +58,7 @@ fn invoke(
         writer.print("Filesystem initialization error: {!}\n", .{err}) catch {};
         allocator.destroy(filesystem);
         return switch (err) {
-            error.UnsupportedFormat => ActionError.UnsupportedFormat,
+            error.UnsupportedFilesystem => ActionError.UnsupportedFormat,
             error.ReadError => ActionError.ReadError,
             else => ActionError.ReadError,
         };

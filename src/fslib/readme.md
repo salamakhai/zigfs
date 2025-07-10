@@ -2,7 +2,9 @@
 
 # FSLib - Filesystem Library
 
-## EXT4 Layout Concepts
+## Ext4
+
+### Layout
 
 ```
 Directory Entry (filename + inode) -> Inode (size, block pointers) -> Data Blocks
@@ -15,23 +17,23 @@ Structure:
 - Data Blocks: contain actual content
 ```
 
-## Code Structure
+### Structure
 
-### `/layout/`
+#### `/layout/`
 Raw on-disk structure definitions (extern structs)
 
-### `/structures/` 
+#### `/structures/` 
 High-level wrappers around layouts
 
-### `/operations/`
+#### `/operations/`
 Filesystem operations using structures and layouts
 
-### `ext4_fs.zig`
+#### `ext4_fs.zig`
 Main filesystem interface - coordinates all operations
 - Public API for filesystem access
 - Manages lifecycle of operations modules
 
-### `ext4_impl.zig`
+#### `ext4_impl.zig`
 Adapter between EXT4 filesystem and generic filesystem interface
 - Converts EXT4 types to generic types
 - Implements generic filesystem operations

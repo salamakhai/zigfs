@@ -1,8 +1,8 @@
 const std = @import("std");
 
 const fslib = @import("fslib");
-const FileSystemError = fslib.FileSystemError;
 const FileSystem = fslib.FileSystem;
+const Ext4 = FileSystem.Ext4;
 
 const Core = @import("../core/core.zig").Core;
 const Action = Core.Action;
@@ -36,12 +36,32 @@ fn invoke(
         return ActionError.InvalidPath;
     };
 
+    const ext4_fs = filesystem.get(Ext4) catch {
+        writer.print("Error: Unsupported filesystem type\n", .{}) catch {};
+        return ActionError.UnsupportedFormat;
+    };
+
     writer.print("Filesystem information:\n", .{}) catch {};
-    const info = filesystem.getInfo();
-    writer.print("  Type: {s}\n", .{info.fs_type}) catch {};
-    writer.print("  Block size: {} bytes\n", .{info.block_size}) catch {};
-    writer.print("  Total size: {} bytes\n", .{info.total_size}) catch {};
-    writer.print("  Free size: {?} bytes\n", .{info.free_size}) catch {};
-    writer.print("  Total entries: {?}\n", .{info.total_entries}) catch {};
-    writer.print("  Free entries: {?}\n", .{info.free_entries}) catch {};
+    
+    const fs_type = switch (filesystem.resolve()) {
+        .ext4 => "ext4",
+    };
+    
+    const superblock = &ext4_fs.superblock;
+    const block_size = superblock.blockSize();
+    const total_blocks = superblock.layout.s_blocks_count_lo;
+    const free_blocks = superblock.layout.s_free_blocks_count_lo;
+    const total_inodes = superblock.layout.s_inodes_count;
+    const free_inodes = superblock.layout.s_free_inodes_count;
+    
+    writer.print("  Type: {s}\n", .{fs_type}) catch {};
+    writer.print("  Block size: {} bytes\n", .{block_size}) catch {};
+    writer.print("  Total blocks: {}\n", .{total_blocks}) catch {};
+    writer.print("  Free blocks: {}\n", .{free_blocks}) catch {};
+    writer.print("  Total size: {} bytes\n", .{@as(u64, total_blocks) * block_size}) catch {};
+    writer.print("  Free size: {} bytes\n", .{@as(u64, free_blocks) * block_size}) catch {};
+    writer.print("  Total inodes: {}\n", .{total_inodes}) catch {};
+    writer.print("  Free inodes: {}\n", .{free_inodes}) catch {};
+    writer.print("  Blocks per group: {}\n", .{superblock.layout.s_blocks_per_group}) catch {};
+    writer.print("  Inodes per group: {}\n", .{superblock.layout.s_inodes_per_group}) catch {};
 }

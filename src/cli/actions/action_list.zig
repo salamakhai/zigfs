@@ -1,8 +1,8 @@
 const std = @import("std");
 
 const fslib = @import("fslib");
-const FileSystemError = fslib.FileSystemError;
 const FileSystem = fslib.FileSystem;
+const Ext4 = FileSystem.Ext4;
 
 const Core = @import("../core/core.zig").Core;
 const Action = Core.Action;
@@ -35,7 +35,12 @@ fn invoke(
         return ActionError.InvalidPath;
     };
 
-    const dir_entry = filesystem.getPathEntry(
+    const ext4_fs = filesystem.get(Ext4) catch {
+        writer.print("Error: Unsupported filesystem type\n", .{}) catch {};
+        return ActionError.UnsupportedFormat;
+    };
+
+    const dir_entry = ext4_fs.getEntry(
         allocator,
         path,
     ) catch |err| {
@@ -50,20 +55,21 @@ fn invoke(
             },
         }
     };
-    defer allocator.free(dir_entry.name);
 
     if (!dir_entry.isDirectory()) {
         writer.print("Error: '{s}' is not a directory\n", .{path}) catch {};
         return ActionError.NotDirectory;
     }
 
-    const entries = filesystem.readEntryAsDirectory(allocator, &dir_entry) catch |err| {
+    const entries = ext4_fs.listDirectory(allocator, &dir_entry) catch |err| {
         writer.print("Error listing directory '{s}': {!}\n", .{ path, err }) catch {};
         return ActionError.ReadError;
     };
     defer {
         for (entries) |entry| {
-            allocator.free(entry.name);
+            if (entry.name) |name| {
+                allocator.free(name);
+            }
         }
         allocator.free(entries);
     }
@@ -75,31 +81,48 @@ fn invoke(
 
     // Print header
     writer.print("Contents of '{s}':\n", .{path}) catch {};
-    writer.print("{s:<25} {s:<10} {s:<8} {s}\n", .{ "Name", "Type", "Mode", "Size" }) catch {};
-    writer.print("{s}\n", .{"-" ** 60}) catch {};
+    writer.print("{s:<25} {s:<10} {s:<15} {s}\n", .{ "Name", "Type", "Permissions", "Size" }) catch {};
+    writer.print("{s}\n", .{"-" ** 62}) catch {};
 
     // Print entries
     for (entries) |entry| {
-        const type_str = switch (entry.entry_type) {
-            .file => "file",
-            .directory => "dir",
-            .symlink => "link",
-            .unknown => "unknown",
-            .character_device => "chardev",
-            .block_device => "blockdev",
-            .fifo => "fifo",
-            .socket => "socket",
+        const entry_name = entry.name orelse "<unknown>";
+        
+        const type_str = if (entry.isDirectory())
+            "dir"
+        else if (entry.isFile())
+            "file"
+        else if (entry.isSymlink())
+            "link"
+        else if (entry.isCharacterDevice())
+            "chardev"
+        else if (entry.isBlockDevice())
+            "blockdev"
+        else if (entry.isFifo())
+            "fifo"
+        else if (entry.isSocket())
+            "socket"
+        else
+            "unknown";
+
+        // Get inode information for size and mode
+        const inode = ext4_fs.reader.readInode(entry.inodeNumber()) catch |err| {
+            writer.print("Error reading inode for '{s}': {!}\n", .{ entry_name, err }) catch {};
+            continue;
         };
 
         var size_buffer: [32]u8 = undefined;
-        const formatted_size = formatFileSize(entry.getSize() orelse 0, &size_buffer) catch "N/A";
+        const formatted_size = formatFileSize(inode.size(), &size_buffer) catch "N/A";
+
+        var perm_buffer: [10]u8 = undefined;
+        const formatted_perms = inode.formatPermissions(&perm_buffer) catch "?????????";
 
         writer.print(
-            "{s:<25} {s:<10} 0x{X:0>4} {s}\n",
+            "{s:<25} {s:<10} {s:<15} {s}\n",
             .{
-                entry.name,
+                entry_name,
                 type_str,
-                entry.getMode() orelse 0,
+                formatted_perms,
                 formatted_size,
             },
         ) catch {

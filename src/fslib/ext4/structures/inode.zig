@@ -2,7 +2,7 @@ const std = @import("std");
 const InodeLayout = @import("../layout/inode_layout.zig").InodeLayout;
 
 /// High-level wrapper for EXT4 inode layout
-/// 
+///
 /// Provides convenient methods for working with inodes
 /// without exposing the underlying layout details.
 pub const Inode = struct {
@@ -17,7 +17,7 @@ pub const Inode = struct {
         return std.mem.asBytes(&self.layout.i_block).*;
     }
 
-    // === Types ===
+    // Types
     pub fn isDirectory(self: *const Inode) bool {
         return (self.layout.i_mode & InodeLayout.FILE_TYPE_MASK) == InodeLayout.FILE_TYPE_DIR;
     }
@@ -50,7 +50,7 @@ pub const Inode = struct {
         return self.isCharacterDevice() or self.isBlockDevice();
     }
 
-    // === Size Information ===
+    // Size Information
     pub fn size(self: *const Inode) u64 {
         return @as(u64, self.layout.i_size_lo) | (@as(u64, self.layout.i_size_high) << 32);
     }
@@ -61,7 +61,7 @@ pub const Inode = struct {
         return (file_size + block_size - 1) / block_size;
     }
 
-    // === Permissions ===
+    // Permissions
     /// Get raw mode value
     pub fn mode(self: *const Inode) u16 {
         return self.layout.i_mode;
@@ -72,35 +72,51 @@ pub const Inode = struct {
         return self.layout.i_mode & InodeLayout.PERM_MASK;
     }
 
-    /// Check specific permission
+    pub fn formatPermissions(self: *const Inode, buffer: []u8) ![]const u8 {
+        if (buffer.len < 10) return error.BufferTooSmall;
+
+        const file_mode = self.layout.i_mode;
+
+        // File type character
+        buffer[0] = switch (file_mode & InodeLayout.FILE_TYPE_MASK) {
+            InodeLayout.FILE_TYPE_DIR => 'd',
+            InodeLayout.FILE_TYPE_REGULAR => '-',
+            InodeLayout.FILE_TYPE_SYMLINK => 'l',
+            InodeLayout.FILE_TYPE_BLOCKDEV => 'b',
+            InodeLayout.FILE_TYPE_CHARDEV => 'c',
+            InodeLayout.FILE_TYPE_FIFO => 'p',
+            InodeLayout.FILE_TYPE_SOCKET => 's',
+            else => '?',
+        };
+
+        // User permissions
+        buffer[1] = if (file_mode & InodeLayout.S_IRUSR != 0) 'r' else '-';
+        buffer[2] = if (file_mode & InodeLayout.S_IWUSR != 0) 'w' else '-';
+        buffer[3] = if (file_mode & InodeLayout.S_IXUSR != 0)
+            (if (file_mode & InodeLayout.S_ISUID != 0) 's' else 'x')
+        else
+            (if (file_mode & InodeLayout.S_ISUID != 0) 'S' else '-');
+
+        // Group permissions
+        buffer[4] = if (file_mode & InodeLayout.S_IRGRP != 0) 'r' else '-';
+        buffer[5] = if (file_mode & InodeLayout.S_IWGRP != 0) 'w' else '-';
+        buffer[6] = if (file_mode & InodeLayout.S_IXGRP != 0)
+            (if (file_mode & InodeLayout.S_ISGID != 0) 's' else 'x')
+        else
+            (if (file_mode & InodeLayout.S_ISGID != 0) 'S' else '-');
+
+        // Others permissions
+        buffer[7] = if (file_mode & InodeLayout.S_IROTH != 0) 'r' else '-';
+        buffer[8] = if (file_mode & InodeLayout.S_IWOTH != 0) 'w' else '-';
+        buffer[9] = if (file_mode & InodeLayout.S_IXOTH != 0)
+            (if (file_mode & InodeLayout.S_ISVTX != 0) 't' else 'x')
+        else
+            (if (file_mode & InodeLayout.S_ISVTX != 0) 'T' else '-');
+
+        return buffer[0..10];
+    }
+
     pub fn hasPermission(self: *const Inode, permission: u16) bool {
         return (self.layout.i_mode & permission) != 0;
-    }
-
-    // === Validation ===
-    pub fn isValid(self: *const Inode) bool {
-        // Basic validation
-        if (self.layout.i_mode == 0) return false;
-        if (self.layout.i_links_count == 0 and !self.isDirectory()) return false;
-
-        const file_type = self.fileType();
-        return file_type != .unknown;
-    }
-
-    // === Debug ===
-    pub fn format(
-        self: *const Inode,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("Inode{{ type={}, mode=0o{o}, size={}, links={} }}", .{
-            self.fileType(),
-            self.layout.i_mode,
-            self.size(),
-            self.layout.i_links_count,
-        });
     }
 };

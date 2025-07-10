@@ -1,3 +1,0 @@
-pub const FilesystemError = error{
-
-};

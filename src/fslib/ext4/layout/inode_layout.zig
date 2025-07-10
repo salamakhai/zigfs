@@ -60,6 +60,21 @@ pub const InodeLayout = extern struct {
     pub const FILE_TYPE_SYMLINK: u16 = 0xA000;   // Symbolic link
     pub const FILE_TYPE_SOCKET: u16 = 0xC000;    // Socket
     
+    // Permission bit constants (lower 12 bits of i_mode)
+    pub const PERM_MASK: u16 = 0x0FFF;            // All permission bits
+    pub const S_ISUID: u16 = 0x0800;              // Set user ID on execution
+    pub const S_ISGID: u16 = 0x0400;              // Set group ID on execution
+    pub const S_ISVTX: u16 = 0x0200;              // Sticky bit
+    pub const S_IRUSR: u16 = 0x0100;              // User read permission
+    pub const S_IWUSR: u16 = 0x0080;              // User write permission
+    pub const S_IXUSR: u16 = 0x0040;              // User execute permission
+    pub const S_IRGRP: u16 = 0x0020;              // Group read permission
+    pub const S_IWGRP: u16 = 0x0010;              // Group write permission
+    pub const S_IXGRP: u16 = 0x0008;              // Group execute permission
+    pub const S_IROTH: u16 = 0x0004;              // Other read permission
+    pub const S_IWOTH: u16 = 0x0002;              // Other write permission
+    pub const S_IXOTH: u16 = 0x0001;              // Other execute permission
+
     // Important inode flags
     pub const EXT4_EXTENTS_FL: u32 = 0x00080000;     // Inode uses extents
     pub const EXT4_INLINE_DATA_FL: u32 = 0x10000000; // Data stored in inode
