@@ -16,9 +16,9 @@ pub const Filesystem = struct {
     };
 
     // Lifecycle
-    pub fn create(allocator: Allocator, file: std.fs.File) !Filesystem {
+    pub fn create(allocator: Allocator, file: std.fs.File, filename: []const u8) !Filesystem {
         if (Ext4.detect(file)) {
-            const ext4_fs = try Ext4.create(allocator, file);
+            const ext4_fs = try Ext4.create(allocator, file, filename);
             return Filesystem{
                 .filesystem = Union{ .ext4 = ext4_fs },
                 .mounted_type = .ext4,
@@ -48,5 +48,10 @@ pub const Filesystem = struct {
             },
             else => return error.UnsupportedFilesystem,
         }
+    }
+
+    pub fn getOwnedName(self: *const Filesystem) []const u8 {
+        const ext4_fs = self.get(Ext4) catch return "unknown";
+        return ext4_fs.getOwnedFileName();
     }
 };

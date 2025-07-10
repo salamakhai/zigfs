@@ -54,6 +54,7 @@ fn invoke(
     filesystem.* = FileSystem.create(
         allocator,
         file,
+        file_path,
     ) catch |err| {
         writer.print("Filesystem initialization error: {!}\n", .{err}) catch {};
         allocator.destroy(filesystem);

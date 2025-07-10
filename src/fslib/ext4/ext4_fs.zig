@@ -17,6 +17,7 @@ pub const Ext4 = struct {
     // Vaiables
     file: fs.File,
     allocator: Allocator,
+    filename: []u8,
 
     // structures
     superblock: Superblock,
@@ -32,14 +33,22 @@ pub const Ext4 = struct {
         return Superblock.detect(file);
     }
 
-    pub fn create(allocator: Allocator, file: fs.File) !*Ext4 {
+    pub fn create(allocator: Allocator, file: fs.File, filename: []const u8) !*Ext4 {
         const superblock = try Superblock.create(file);
         const filesystem = try allocator.create(Ext4);
+
+        // TODO -- Temp solution: in the future get volume name in superblock instead
+        const basename = std.fs.path.basename(filename);
+        const formatted_name = if (std.mem.lastIndexOf(u8, basename, ".")) |dot_index|
+            basename[0..dot_index]
+        else
+            basename;
 
         filesystem.* = Ext4{
             .file = file,
             .superblock = superblock,
             .allocator = allocator,
+            .filename = try allocator.dupe(u8, formatted_name),
             .reader = undefined,
             .navigator = undefined,
             .traversal = undefined,
@@ -56,10 +65,15 @@ pub const Ext4 = struct {
 
     pub fn destroy(self: *Ext4) void {
         self.file.close();
+        self.allocator.free(self.filename);
         self.allocator.destroy(self);
     }
 
     // Public
+    pub fn getOwnedFileName(self: *Ext4) []const u8 {
+        return self.filename;
+    }
+
     pub fn getRootEntry(self: *Ext4) !Entry {
         return self.navigator.getRootEntry();
     }

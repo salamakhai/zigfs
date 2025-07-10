@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Core = @import("../core/core.zig").Core;
+const Colors = Core.Colors;
 const Context = Core.Context;
 const ArgIterator = Core.ArgIterator;
 const Command = Core.Command;
@@ -35,18 +36,12 @@ fn help() []const u8 {
     ;
 }
 
-//
-// TODO: Create browser module for session managment, command only for creation context and browser.
-//
-
 fn execute(
     self: *const Command,
     core: *const Core,
     args: *const ArgIterator,
 ) CommandError!void {
     _ = self;
-
-    const prompt = "%";
 
     const allocator = core.allocator;
     const writer = core.writer;
@@ -73,8 +68,7 @@ fn execute(
     var buffer: [256]u8 = undefined;
 
     while (true) {
-        const current_dir = getWorkingDirectory(&context);
-        writer.print("~{s} {s} ", .{ current_dir, prompt }) catch {};
+        printPromt(writer, &context);
 
         if (reader.readUntilDelimiterOrEof(buffer[0..], '\n') catch null) |input| {
             const trimmed_input = std.mem.trim(u8, input, " \t\r\n");
@@ -101,6 +95,40 @@ fn execute(
     }
 }
 
+// Gui
+fn printPromt(writer: Core.Writer, context: *Context) void {
+    const prompt = "%";
+
+    if (context.filesystem) |fs_ctx| {
+        const current_dir = fs_ctx.session.getCurrentDirectory();
+        const fs_name = fs_ctx.filesystem.getOwnedName();
+
+        writer.print("{s}{s}{s} {s}~{s}{s} {s}{s}{s} ", .{
+            Colors.get(Colors.yellow), fs_name,     Colors.get(Colors.reset),
+            Colors.get(Colors.cyan),   current_dir, Colors.get(Colors.reset),
+            Colors.get(Colors.bold),   prompt,      Colors.get(Colors.reset),
+        }) catch {};
+    } else {
+        writer.print("??? {s}{s}{s} ", .{ Colors.get(Colors.cyan), prompt, Colors.get(Colors.reset) }) catch {};
+    }
+}
+
+fn printSubCommandsHelp(writer: Core.Writer, actions_registry: []const Action) void {
+    writer.writeAll("\nAvailable commands:\n") catch {};
+    writer.writeAll("  help         - Show this help message\n") catch {};
+
+    for (actions_registry) |action| {
+        writer.print("  {s:<12} - {s}\n", .{ action.name, action.description }) catch {};
+    }
+
+    writer.writeAll("  exit/quit    - Exit the browser\n\n") catch {};
+}
+
+fn printBlankLine(writer: Core.Writer) void {
+    writer.print("\n", .{}) catch {};
+}
+
+// Helpers
 fn IsWaitingExit(input: []const u8) bool {
     return std.mem.eql(u8, input, "exit") or
         std.mem.eql(u8, input, "quit") or
@@ -134,35 +162,9 @@ fn handleSubCommand(
 
     const action = findAction(actions_registry, command) orelse {
         writer.print("Unknown command: {s}\n", .{command}) catch {};
-        writer.print("Type 'help' for available commands.\n", .{}) catch {};
+        writer.print("Type 'help' for available commands\n", .{}) catch {};
         return;
     };
 
-    action.invoke(context, allocator, arg_iterator, writer) catch |err| {
-        writer.print("Action '{s}' executing failed: {!}\n", .{ action.name, err }) catch {};
-    };
-    printBlankLine(writer);
-}
-
-fn printSubCommandsHelp(writer: Core.Writer, actions_registry: []const Action) void {
-    writer.writeAll("\nAvailable commands:\n") catch {};
-    writer.writeAll("  help         - Show this help message\n") catch {};
-
-    for (actions_registry) |action| {
-        writer.print("  {s:<12} - {s}\n", .{ action.name, action.description }) catch {};
-    }
-
-    writer.writeAll("  exit/quit    - Exit the browser\n\n") catch {};
-}
-
-fn printBlankLine(writer: Core.Writer) void {
-    writer.print("\n", .{}) catch {};
-}
-
-fn getWorkingDirectory(context: *Context) []const u8 {
-    if (context.filesystem) |fs_ctx| {
-        const current_dir = fs_ctx.session.getCurrentDirectory();
-        return current_dir;
-    }
-    return ROOT_DIRECTORY;
+    action.invoke(context, allocator, arg_iterator, writer) catch {};
 }

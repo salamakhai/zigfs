@@ -8,6 +8,7 @@ pub const Core = struct {
     pub const ArgIterator = @import("arg_iterator.zig").ArgIterator;
 
     pub const CoreError = @import("errors.zig").CoreError;
+    pub const Colors = @import("colors.zig").Colors;
     pub const Context = @import("../context/context.zig").Context;
     pub const Action = @import("../actions/action.zig").Action;
     pub const Command = @import("../commands/command.zig").Command;
