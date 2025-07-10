@@ -14,6 +14,7 @@ const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
 const NewInfoAction = @import("../actions/action_info.zig").CreateAction;
 const NewListAction = @import("../actions/action_list.zig").CreateAction;
 const NewCdAction = @import("../actions/action_cd.zig").CreateAction;
+const NewClearAction = @import("../actions/action_clear.zig").CreateAction;
 
 pub const COMMAND = Command{
     .name = "browse",
@@ -53,6 +54,7 @@ fn execute(
         NewListAction(),
         NewCdAction(),
         NewCatAction(),
+        NewClearAction(),
     };
 
     var context = Context.init();
@@ -97,16 +99,18 @@ fn execute(
 
 // Gui
 fn printPromt(writer: Core.Writer, context: *Context) void {
+    const mark = ">";
     const prompt = "%";
 
     if (context.filesystem) |fs_ctx| {
         const current_dir = fs_ctx.session.getCurrentDirectory();
         const fs_name = fs_ctx.filesystem.getOwnedName();
 
-        writer.print("{s}{s}{s} {s}~{s}{s} {s}{s}{s} ", .{
-            Colors.get(Colors.yellow), fs_name,     Colors.get(Colors.reset),
-            Colors.get(Colors.cyan),   current_dir, Colors.get(Colors.reset),
-            Colors.get(Colors.bold),   prompt,      Colors.get(Colors.reset),
+        writer.print("{s}{s}{s} {s}{s}{s} {s}~{s}{s} {s}{s}{s} ", .{
+            Colors.get(Colors.magenta), mark,        Colors.get(Colors.reset),
+            Colors.get(Colors.yellow),  fs_name,     Colors.get(Colors.reset),
+            Colors.get(Colors.cyan),    current_dir, Colors.get(Colors.reset),
+            Colors.get(Colors.bold),    prompt,      Colors.get(Colors.reset),
         }) catch {};
     } else {
         writer.print("??? {s}{s}{s} ", .{ Colors.get(Colors.cyan), prompt, Colors.get(Colors.reset) }) catch {};
