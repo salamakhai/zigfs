@@ -13,7 +13,7 @@ const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
-pub fn CreateAction() Action {
+pub fn createAction() Action {
     return Action{
         .name = "cat",
         .description = "Extract data from a file",

@@ -8,8 +8,8 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewCatAction = @import("../actions/action_cat.zig").CreateAction;
-const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
+const newCatAction = @import("../actions/action_cat.zig").createAction;
+const newMountAction = @import("../actions/action_mount.zig").createAction;
 
 pub const COMMAND = Command{
     .name = "cat",
@@ -41,8 +41,8 @@ fn execute(
 
     const allocator = core.allocator;
     const writer = core.writer;
-    const mount = NewMountAction();
-    const cat = NewCatAction();
+    const mount = newMountAction();
+    const cat = newCatAction();
 
     var context = Context.init();
     defer context.deinit();

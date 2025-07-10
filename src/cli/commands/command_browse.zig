@@ -9,12 +9,12 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewCatAction = @import("../actions/action_cat.zig").CreateAction;
-const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
-const NewInfoAction = @import("../actions/action_info.zig").CreateAction;
-const NewListAction = @import("../actions/action_list.zig").CreateAction;
-const NewCdAction = @import("../actions/action_cd.zig").CreateAction;
-const NewClearAction = @import("../actions/action_clear.zig").CreateAction;
+const newCatAction = @import("../actions/action_cat.zig").createAction;
+const newMountAction = @import("../actions/action_mount.zig").createAction;
+const newInfoAction = @import("../actions/action_info.zig").createAction;
+const newListAction = @import("../actions/action_list.zig").createAction;
+const newCdAction = @import("../actions/action_cd.zig").createAction;
+const newClearAction = @import("../actions/action_clear.zig").createAction;
 
 pub const COMMAND = Command{
     .name = "browse",
@@ -44,25 +44,24 @@ fn execute(
 ) CommandError!void {
     _ = self;
 
-    const allocator = core.allocator;
-    const writer = core.writer;
-    const reader = core.reader;
-    const mount = NewMountAction();
-
-    const actions_registry = [_]Action{
-        NewInfoAction(),
-        NewListAction(),
-        NewCdAction(),
-        NewCatAction(),
-        NewClearAction(),
-    };
-
     var context = Context.init();
     defer context.deinit();
 
-    var args_copy = args.*;
+    const allocator = core.allocator;
+    const writer = core.writer;
+    const reader = core.reader;
+    const mount = newMountAction();
 
+    var args_copy = args.*;
     try mount.invoke(&context, allocator, &args_copy, writer);
+
+    const actions_registry = [_]Action{
+        newInfoAction(),
+        newListAction(),
+        newCdAction(),
+        newCatAction(),
+        newClearAction(),
+    };
 
     // Interactive loop
     printSubCommandsHelp(writer, &actions_registry);
@@ -78,6 +77,7 @@ fn execute(
                 continue;
             }
             if (IsWaitingExit(trimmed_input)) {
+                printBlankLine(writer);
                 break;
             }
 

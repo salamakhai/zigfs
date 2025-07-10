@@ -37,7 +37,7 @@ pub const Ext4 = struct {
         const superblock = try Superblock.create(file);
         const filesystem = try allocator.create(Ext4);
 
-        // TODO -- Temp solution: in the future get volume name in superblock instead
+        // TODO -- Temp solution: in the future get volume name from superblock instead
         const basename = std.fs.path.basename(filename);
         const formatted_name = if (std.mem.lastIndexOf(u8, basename, ".")) |dot_index|
             basename[0..dot_index]

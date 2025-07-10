@@ -9,7 +9,7 @@ const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
-pub fn CreateAction() Action {
+pub fn createAction() Action {
     return Action{
         .name = "clear",
         .description = "Clear the terminal screen",

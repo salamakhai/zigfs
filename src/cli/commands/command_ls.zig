@@ -11,8 +11,8 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewListAction = @import("../actions/action_list.zig").CreateAction;
-const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
+const newListAction = @import("../actions/action_list.zig").createAction;
+const newMountAction = @import("../actions/action_mount.zig").createAction;
 
 pub const COMMAND = Command{
     .name = "ls",
@@ -43,8 +43,8 @@ fn execute(
 
     const allocator = core.allocator;
     const writer = core.writer;
-    const mount = NewMountAction();
-    const list = NewListAction();
+    const mount = newMountAction();
+    const list = newListAction();
 
     var context = Context.init();
     defer context.deinit();

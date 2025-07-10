@@ -13,7 +13,7 @@ const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
 
 // Public
-pub fn CreateAction() Action {
+pub fn createAction() Action {
     return Action{
         .name = "cd",
         .description = "Change current working directory",

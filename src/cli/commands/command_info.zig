@@ -8,8 +8,8 @@ const Action = Core.Action;
 
 const CommandError = Command.CommandError;
 
-const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
-const NewInfoAction = @import("../actions/action_info.zig").CreateAction;
+const newMountAction = @import("../actions/action_mount.zig").createAction;
+const newInfoAction = @import("../actions/action_info.zig").createAction;
 
 pub const COMMAND = Command{
     .name = "info",
@@ -39,8 +39,8 @@ fn execute(
 
     const allocator = core.allocator;
     const writer = core.writer;
-    const mount = NewMountAction();
-    const info = NewInfoAction();
+    const mount = newMountAction();
+    const info = newInfoAction();
 
     var context = Context.init();
     defer context.deinit();

@@ -88,7 +88,10 @@ pub const Reader = struct {
             defer arena.deinit();
             const allocator = arena.allocator();
 
-            const mappings = ExtentResolutionAlgorithm.extractLeafExtents(extent_data, allocator) catch {
+            const mappings = ExtentResolutionAlgorithm.extractLeafExtents(
+                extent_data,
+                allocator,
+            ) catch {
                 return FilesystemError.ReadError;
             };
 
