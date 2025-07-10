@@ -28,12 +28,12 @@ fn invoke(
     arguments: *ArgIterator,
     writer: Writer,
 ) ActionError!void {
-    const path = arguments.next() orelse "/";
-
     const fs_ctx = context.filesystem orelse {
         writer.print("Error: Context should be FileSystem!\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
+
+    const path = arguments.next() orelse ".";
 
     const filesystem = fs_ctx.filesystem;
     const ext4_fs = filesystem.get(Ext4) catch {
@@ -41,9 +41,12 @@ fn invoke(
         return ActionError.UnsupportedFormat;
     };
 
+    const target_path = try fs_ctx.session.buildCurrentPath(allocator, path);
+    defer allocator.free(target_path);
+
     const dir_entry = ext4_fs.getEntry(
         allocator,
-        path,
+        target_path,
     ) catch |err| {
         switch (err) {
             error.EntryNotFound => {

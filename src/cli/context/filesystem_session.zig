@@ -22,7 +22,7 @@ pub const FilesystemSession = struct {
     // Public
     pub fn setCurrentDirectory(self: *FilesystemSession, current_dir: []const u8) !void {
         self.allocator.free(self.current_dir);
-        self.current_dir = try self.allocator.dupe(u8, current_dir);
+        self.current_dir = try normilizePath(self.allocator, current_dir);
     }
 
     pub fn getCurrentDirectory(self: *const FilesystemSession) []const u8 {
@@ -36,5 +36,40 @@ pub const FilesystemSession = struct {
         } else {
             return try std.fs.path.join(allocator, &[_][]const u8{ current_dir, path });
         }
+    }
+
+    // Private
+    fn normilizePath(allocator: Allocator, path: []const u8) ![]u8 {
+        var components = std.ArrayList([]const u8).init(allocator);
+        defer components.deinit();
+
+        // Check special entries
+        var iter = std.mem.splitScalar(u8, path, '/');
+        while (iter.next()) |part| {
+            if (part.len == 0 or std.mem.eql(u8, part, ".")) {
+                continue;
+            } else if (std.mem.eql(u8, part, "..")) {
+                // Go up one level
+                if (components.items.len > 0) {
+                    _ = components.pop();
+                }
+            } else {
+                try components.append(part);
+            }
+        }
+
+        if (components.items.len == 0) {
+            return try allocator.dupe(u8, "/");
+        }
+
+        var result = std.ArrayList([]const u8).init(allocator);
+        defer result.deinit();
+
+        try result.append("");
+        for (components.items) |part| {
+            try result.append(part);
+        }
+
+        return try std.mem.join(allocator, "/", result.items);
     }
 };
