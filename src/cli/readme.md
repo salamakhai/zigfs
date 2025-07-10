@@ -1,11 +1,7 @@
 # CLI - Command Line Interface
 [_readme backlink_](../../README.md)
 
-## Core
-Provides unified interface for CLI components, holds shared types and utilities
-
-## Architecture
-### Structure
+## Structure
 
 #### `/core/`
 Shared types and utilities for CLI components
