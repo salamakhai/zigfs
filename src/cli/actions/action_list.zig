@@ -30,11 +30,12 @@ fn invoke(
 ) ActionError!void {
     const path = arguments.next() orelse "/";
 
-    const filesystem = context.getFileSystem() orelse {
+    const fs_ctx = context.filesystem orelse {
         writer.print("Error: Context should be FileSystem!\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 
+    const filesystem = fs_ctx.filesystem;
     const ext4_fs = filesystem.get(Ext4) catch {
         writer.print("Error: Unsupported filesystem type\n", .{}) catch {};
         return ActionError.UnsupportedFormat;
@@ -80,7 +81,6 @@ fn invoke(
     }
 
     // Print header
-    writer.print("Contents of '{s}':\n", .{path}) catch {};
     writer.print("{s:<25} {s:<10} {s:<15} {s}\n", .{ "Name", "Type", "Permissions", "Size" }) catch {};
     writer.print("{s}\n", .{"-" ** 62}) catch {};
 

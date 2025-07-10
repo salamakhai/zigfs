@@ -64,6 +64,10 @@ fn invoke(
         };
     };
 
-    context.setFileSystem(allocator, filesystem);
+    context.newFilesystem(allocator, filesystem) catch |err| {
+        writer.print("Context initialization error: {!}\n", .{err}) catch {};
+        allocator.destroy(filesystem);
+        return ActionError.OutOfMemory;
+    };
     writer.print("Filesystem detected and mounted successfully\n", .{}) catch {};
 }

@@ -31,11 +31,12 @@ fn invoke(
     _ = allocator;
     _ = args;
 
-    const filesystem = context.getFileSystem() orelse {
-        writer.print("Error: No filesystem mounted in context!\n", .{}) catch {};
+    const fs_ctx = context.filesystem orelse {
+        writer.print("Error: Context should be FileSystem!\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 
+    const filesystem = fs_ctx.filesystem;
     const ext4_fs = filesystem.get(Ext4) catch {
         writer.print("Error: Unsupported filesystem type\n", .{}) catch {};
         return ActionError.UnsupportedFormat;

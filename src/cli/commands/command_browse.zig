@@ -12,6 +12,7 @@ const NewCatAction = @import("../actions/action_cat.zig").CreateAction;
 const NewMountAction = @import("../actions/action_mount.zig").CreateAction;
 const NewInfoAction = @import("../actions/action_info.zig").CreateAction;
 const NewListAction = @import("../actions/action_list.zig").CreateAction;
+const NewCdAction = @import("../actions/action_cd.zig").CreateAction;
 
 pub const COMMAND = Command{
     .name = "browse",
@@ -19,6 +20,8 @@ pub const COMMAND = Command{
     .getHelp = help,
     .execute = execute,
 };
+
+const ROOT_DIRECTORY: []const u8 = "/";
 
 fn help() []const u8 {
     return 
@@ -43,7 +46,7 @@ fn execute(
 ) CommandError!void {
     _ = self;
 
-    const prompt = "> ";
+    const prompt = "%";
 
     const allocator = core.allocator;
     const writer = core.writer;
@@ -51,9 +54,10 @@ fn execute(
     const mount = NewMountAction();
 
     const actions_registry = [_]Action{
-        NewCatAction(),
         NewInfoAction(),
         NewListAction(),
+        NewCdAction(),
+        NewCatAction(),
     };
 
     var context = Context.init();
@@ -69,7 +73,8 @@ fn execute(
     var buffer: [256]u8 = undefined;
 
     while (true) {
-        writer.print("{s}", .{prompt}) catch {};
+        const current_dir = getWorkingDirectory(&context);
+        writer.print("~{s} {s} ", .{ current_dir, prompt }) catch {};
 
         if (reader.readUntilDelimiterOrEof(buffer[0..], '\n') catch null) |input| {
             const trimmed_input = std.mem.trim(u8, input, " \t\r\n");
@@ -133,7 +138,6 @@ fn handleSubCommand(
         return;
     };
 
-    printBlankLine(writer);
     action.invoke(context, allocator, arg_iterator, writer) catch |err| {
         writer.print("Action '{s}' executing failed: {!}\n", .{ action.name, err }) catch {};
     };
@@ -153,4 +157,12 @@ fn printSubCommandsHelp(writer: Core.Writer, actions_registry: []const Action) v
 
 fn printBlankLine(writer: Core.Writer) void {
     writer.print("\n", .{}) catch {};
+}
+
+fn getWorkingDirectory(context: *Context) []const u8 {
+    if (context.filesystem) |fs_ctx| {
+        const current_dir = fs_ctx.session.getCurrentDirectory();
+        return current_dir;
+    }
+    return ROOT_DIRECTORY;
 }

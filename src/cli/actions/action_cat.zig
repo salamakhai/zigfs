@@ -35,19 +35,26 @@ fn invoke(
 
     const output_file = args.next();
 
-    const filesystem = context.getFileSystem() orelse {
+    const fs_ctx = context.filesystem orelse {
         writer.print("Error: Context should be FileSystem!\n", .{}) catch {};
         return ActionError.InvalidPath;
     };
 
+    const filesystem = fs_ctx.filesystem;
     const ext4_fs = filesystem.get(Ext4) catch {
         writer.print("Error: Unsupported filesystem type\n", .{}) catch {};
         return ActionError.UnsupportedFormat;
     };
 
+    const desired_path = fs_ctx.session.buildCurrentPath(allocator, file_path) catch {
+        writer.print("Error: Failed to build path\n", .{}) catch {};
+        return ActionError.OutOfMemory;
+    };
+    defer allocator.free(desired_path);
+
     const file_entry = ext4_fs.getEntry(
         allocator,
-        file_path,
+        desired_path,
     ) catch |err| {
         switch (err) {
             error.EntryNotFound => {

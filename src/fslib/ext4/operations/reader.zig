@@ -21,7 +21,7 @@ pub const Reader = struct {
     superblock: *const Superblock,
     block_size: u32,
 
-    // === Lifecycle ===
+    // Lifecycle
     pub fn init(
         allocator: Allocator,
         file: fs.File,
@@ -35,7 +35,7 @@ pub const Reader = struct {
         };
     }
 
-    // === Public ===
+    // Public
     pub fn readInode(self: *const Reader, inode_number: u32) !Inode {
         if (inode_number == 0) {
             return FilesystemError.ReadError;
@@ -72,7 +72,7 @@ pub const Reader = struct {
         return data;
     }
 
-    // ==== Private ===
+    // Private
     fn readFileContentWithExtents(self: *const Reader, data: []u8, inode: *const Inode) !void {
         const block_data = inode.blockData();
         const extent_data = std.mem.asBytes(&block_data);
