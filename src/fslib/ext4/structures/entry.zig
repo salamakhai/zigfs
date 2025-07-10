@@ -1,4 +1,6 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
+
 const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
 
 pub const Entry = struct {
@@ -27,6 +29,29 @@ pub const Entry = struct {
     }
 
     // Properties
+    pub fn getCachedName(self: *const Entry) []const u8 {
+        return self.name;
+    }
+
+    pub fn getName(self: *const Entry, directory_data: []const u8, entry_offset: usize) []const u8 {
+        const name_start = entry_offset + @sizeOf(EntryLayout);
+        const name_end = name_start + self.layout.name_len;
+        
+        if (name_end <= directory_data.len) {
+            return directory_data[name_start..name_end];
+        }
+        
+        return &[_]u8{};
+    }
+
+    pub fn getOwnedName(self: *const Entry, allocator: Allocator, directory_data: []const u8, entry_offset: usize) ![]u8 {
+        const name_slice = self.getName(directory_data, entry_offset);
+        if (name_slice.len == 0) {
+            return error.InvalidName;
+        }
+        return try allocator.dupe(u8, name_slice);
+    }
+
     pub fn inodeNumber(self: *const Entry) u32 {
         return self.layout.inode;
     }
@@ -40,6 +65,10 @@ pub const Entry = struct {
     }
 
     pub fn rawFileType(self: *const Entry) u8 {
+        return self.layout.file_type;
+    }
+    
+    pub fn fileType(self: *const Entry) u8 {
         return self.layout.file_type;
     }
 
@@ -90,19 +119,19 @@ pub const Entry = struct {
     }
 
     /// Check if this is current directory entry (".")
-    pub fn isCurrentDirectory(self: *const Entry) bool {
-        const name = self.name;
+    pub fn isCurrentDirectory(self: *const Entry, directory_data: []const u8, entry_offset: usize) bool {
+        const name = self.getName(directory_data, entry_offset);
         return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.CURRENT_DIR);
     }
 
     /// Check if this is parent directory entry ("..")
-    pub fn isParentDirectory(self: *const Entry) bool {
-        const name = self.name;
+    pub fn isParentDirectory(self: *const Entry, directory_data: []const u8, entry_offset: usize) bool {
+        const name = self.getName(directory_data, entry_offset);
         return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
     }
 
-    pub fn isSpecial(self: *const Entry, data: []const u8, offset: usize) bool {
-        return self.isCurrentDirectory(data, offset) or self.isParentDirectory(data, offset);
+    pub fn isSpecial(self: *const Entry, directory_data: []const u8, entry_offset: usize) bool {
+        return self.isCurrentDirectory(directory_data, entry_offset) or self.isParentDirectory(directory_data, entry_offset);
     }
 
     // Utils
@@ -115,7 +144,6 @@ pub const Entry = struct {
         return self.layout.rec_len - used_space;
     }
 
-    /// Check if entry is aligned
     pub fn isAligned(self: *const Entry) bool {
         return (self.layout.rec_len % EntryLayout.CONSTRAINTS.REC_LEN_ALIGNMENT) == 0;
     }
@@ -128,21 +156,5 @@ pub const Entry = struct {
     pub fn nameEql(self: *const Entry, data: []const u8, offset: usize, target_name: []const u8) bool {
         const name = self.getName(data, offset);
         return std.mem.eql(u8, name, target_name);
-    }
-
-    // Debug
-    pub fn format(
-        self: *const Entry,
-        comptime fmt: []const u8,
-        options: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void {
-        _ = fmt;
-        _ = options;
-        try writer.print("Entry{{ inode={}, type={}, name_len={} }}", .{
-            self.layout.inode,
-            self.fileType(),
-            self.layout.name_len,
-        });
     }
 };

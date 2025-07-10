@@ -6,13 +6,15 @@ const InodeLayout = @import("../layout/inode_layout.zig").InodeLayout;
 /// Provides convenient methods for working with inodes
 /// without exposing the underlying layout details.
 pub const Inode = struct {
+    // Variables
     layout: InodeLayout,
 
-    /// Create Inode from layout
+    // Lifecycle
     pub fn fromLayout(layout: InodeLayout) Inode {
         return Inode{ .layout = layout };
     }
 
+    // Public
     pub fn blockData(self: *const Inode) [60]u8 {
         return std.mem.asBytes(&self.layout.i_block).*;
     }
@@ -55,7 +57,6 @@ pub const Inode = struct {
         return @as(u64, self.layout.i_size_lo) | (@as(u64, self.layout.i_size_high) << 32);
     }
 
-    /// Get size in filesystem blocks
     pub fn sizeInBlocks(self: *const Inode, block_size: u32) u64 {
         const file_size = self.size();
         return (file_size + block_size - 1) / block_size;

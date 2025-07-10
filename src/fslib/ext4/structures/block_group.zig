@@ -1,9 +1,10 @@
-
 const BlockGroupLayout = @import("../layout/block_group_layout.zig").BlockGroupLayout;
 
 pub const BlockGroup = struct {
+    // Variables
     layout: BlockGroupLayout,
 
+    // Public
     pub fn inodeTableBlock(self: *const BlockGroup) u32 {
         return self.layout.bg_inode_table_lo;
     }

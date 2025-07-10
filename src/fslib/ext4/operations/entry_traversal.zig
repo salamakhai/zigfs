@@ -9,17 +9,17 @@ const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
 
 /// Path resolution and directory traversal
 pub const EntryTraversal = struct {
-    // === Variables ===
+    // Variables
     reader: *const Reader,
 
-    // === Lifecycle ===
+    // Lifecycle
     pub fn init(reader: *const Reader) EntryTraversal {
         return EntryTraversal{
             .reader = reader,
         };
     }
 
-    // === Public ===
+    // Public
     pub fn listDirectory(
         self: *const EntryTraversal,
         allocator: Allocator,
@@ -84,6 +84,7 @@ pub const EntryTraversal = struct {
             }
 
             // Extract name
+
             const name_start = offset + @sizeOf(EntryLayout);
             const name_end = name_start + entry_layout.name_len;
 

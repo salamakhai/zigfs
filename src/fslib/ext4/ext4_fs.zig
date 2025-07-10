@@ -59,7 +59,7 @@ pub const Ext4 = struct {
         self.allocator.destroy(self);
     }
 
-    // === Public ===
+    // Public
     pub fn getRootEntry(self: *Ext4) !Entry {
         return self.navigator.getRootEntry();
     }
