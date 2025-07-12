@@ -14,6 +14,7 @@ pub fn build(b: *std.Build) void {
     });
 
     // ---FSLIB---
+    const fslib_module_name = "fslib";
     const fslib_module = b.createModule(.{
         .root_source_file = b.path("src/fslib/root.zig"),
         .target = target,
@@ -21,13 +22,14 @@ pub fn build(b: *std.Build) void {
     });
 
     // ---CLI---
+    const cli_module_name = "cli";
     const cli_module = b.createModule(.{
         .root_source_file = b.path("src/cli/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    cli_module.addImport("fslib", fslib_module);
+    cli_module.addImport(fslib_module_name, fslib_module);
 
     // -----------------
     const exe = b.addExecutable(.{
@@ -38,8 +40,8 @@ pub fn build(b: *std.Build) void {
     });
 
     // Dependecies
-    exe.root_module.addImport("cli", cli_module);
-    exe.root_module.addImport("fslib", fslib_module);
+    exe.root_module.addImport(cli_module_name, cli_module);
+    exe.root_module.addImport(fslib_module_name, fslib_module);
 
     b.installArtifact(exe);
 
