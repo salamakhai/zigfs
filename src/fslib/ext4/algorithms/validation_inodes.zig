@@ -73,7 +73,7 @@ pub fn validate(inode_layout: *const InodeLayout) bool {
     return true;
 }
 
-// === Private ===
+// === Utils ===
 fn isDirectory(inode_layout: *const InodeLayout) bool {
     const mode = inode_layout.i_mode;
     return (mode & 0xF000) == 0x4000; // S_IFDIR

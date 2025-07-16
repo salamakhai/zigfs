@@ -11,6 +11,7 @@ pub fn blockToOffset(block_number: u64, block_size: u32) u64 {
 }
 
 pub fn offsetToBlock(offset: u64, block_size: u32) u64 {
+    std.debug.assert(block_size > 0);
     return offset / block_size;
 }
 
