@@ -1,6 +1,6 @@
 const std = @import("std");
 const SuperblockLayout = @import("../layout/superblock_layout.zig").SuperblockLayout;
-const superblockValidation = @import("../algorithms/superblock_validation.zig");
+const validation = @import("../algorithms/validation.zig");
 
 const EXT4_SUPER_MAGIC: u16 = SuperblockLayout.MAGIC_NUMBER;
 const SUPERBLOCK_OFFSET: u64 = SuperblockLayout.OFFSET_IN_DEVICE;
@@ -64,7 +64,7 @@ pub const Superblock = struct {
             return false;
         }
 
-        const validation_result = superblockValidation.validateBlockSize(&self.layout);
+        const validation_result = validation.validateBlockSize(self.layout.s_log_block_size);
         return validation_result.is_valid;
     }
 
@@ -74,7 +74,7 @@ pub const Superblock = struct {
     ) (SuperblockError || @TypeOf(writer).Error)!void {
         try writer.print("Validating superblock...\n", .{});
 
-        const validation_result = superblockValidation.validateSuperblock(&self.layout);
+        const validation_result = validation.validateSuperblock(&self.layout);
 
         try writer.print("Magic number: read=0x{X:0>4}, expected=0x{X:0>4}\n", .{ self.layout.s_magic, EXT4_SUPER_MAGIC });
         try writer.print("Blocks count: {}\n", .{self.layout.s_blocks_count_lo});

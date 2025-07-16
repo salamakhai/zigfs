@@ -62,9 +62,4 @@ pub const BlockGroupLayout = extern struct {
         // This is the size for the basic descriptor
         std.debug.assert(@sizeOf(BlockGroupLayout) == 64);
     }
-    
-    // Note: EXT4 supports extended block group descriptors (64 bytes) when
-    // the EXT4_FEATURE_INCOMPAT_64BIT flag is set. The extended version
-    // includes high 32-bit fields for all the _lo fields above.
-    // For this basic filesystem support, the 32-byte version is sufficient.
 };
