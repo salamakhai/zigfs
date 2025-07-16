@@ -6,10 +6,11 @@ const validation_superblock = @import("validation_superblock.zig");
 const validation_extents = @import("validation_extents.zig");
 const validation_block_groups = @import("validation_block_groups.zig");
 const validation_inodes = @import("validation_inodes.zig");
-
-pub const ValidationResult = validation_superblock.ValidationResult;
+const validation_entries = @import("validation_entries.zig");
 
 // === Superblock ===
+pub const ValidationResult = validation_superblock.ValidationResult;
+
 pub const validateSuperblockMagic = validation_superblock.validateMagic;
 pub const validateBlockSize = validation_superblock.validateBlockSize;
 pub const validateFilesystemCounts = validation_superblock.validateFilesystemCounts;
@@ -39,3 +40,6 @@ pub const validateInodeTimestamps = validation_inodes.validateInodeTimestamps;
 pub const validateInodeLinkCount = validation_inodes.validateInodeLinkCount;
 pub const validateInodeBlockCount = validation_inodes.validateInodeBlockCount;
 pub const validateInode = validation_inodes.validate;
+
+// === Entry ===
+pub const validateEntry = validation_entries.validate;

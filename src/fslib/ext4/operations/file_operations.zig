@@ -6,28 +6,23 @@ const Inode = @import("../structures/inode.zig").Inode;
 const Reader = @import("reader.zig").Reader;
 const Error = @import("../ext4_error.zig").Ext4Error;
 
-pub const FileReader = struct {
-    // Variables
+pub const FileOperations = struct {
     reader: *const Reader,
 
-    // Lifecycle
-    pub fn init(reader: *const Reader) FileReader {
-        return FileReader{
+    pub fn init(reader: *const Reader) FileOperations {
+        return FileOperations{
             .reader = reader,
         };
     }
 
-    // Public
-    /// Read complete file contents
-    /// Returns owned buffer with file data
-    pub fn readFile(self: *const FileReader, entry: *const Entry) ![]u8 {
+    pub fn readContent(self: *const FileOperations, entry: *const Entry) ![]u8 {
         if (!entry.isFile()) {
             return Error.NotFile;
         }
 
         const inode_number = entry.inodeNumber();
         const file_inode = try self.reader.readInode(inode_number);
-        
+
         if (!file_inode.isRegularFile()) {
             return Error.NotFile;
         }
@@ -35,10 +30,8 @@ pub const FileReader = struct {
         return self.reader.readInodeData(&file_inode);
     }
 
-    /// Read partial file contents
-    /// Reads 'size' bytes starting from 'offset'
-    pub fn readFilePartial(
-        self: *const FileReader,
+    pub fn readContentPartial(
+        self: *const FileOperations,
         allocator: Allocator,
         entry: *const Entry,
         offset: u64,
@@ -48,7 +41,7 @@ pub const FileReader = struct {
             return Error.NotFile;
         }
 
-        const full_data = try self.readFile(allocator, entry);
+        const full_data = try self.readContent(entry);
         defer allocator.free(full_data);
 
         if (offset >= full_data.len) {
@@ -65,15 +58,14 @@ pub const FileReader = struct {
         return partial_data;
     }
 
-    /// Get file size without reading content
-    pub fn getFileSize(self: *const FileReader, entry: *const Entry) !u64 {
+    pub fn getSize(self: *const FileOperations, entry: *const Entry) !u64 {
         if (!entry.isFile()) {
             return Error.NotFile;
         }
 
         const inode_number = entry.inodeNumber();
         const file_inode = try self.reader.readInode(inode_number);
-        
+
         if (!file_inode.isRegularFile()) {
             return Error.NotFile;
         }
@@ -81,7 +73,7 @@ pub const FileReader = struct {
         return file_inode.size();
     }
 
-    pub fn isReadableFile(self: *const FileReader, entry: *const Entry) !bool {
+    pub fn isReadable(self: *const FileOperations, entry: *const Entry) !bool {
         if (!entry.isFile()) {
             return false;
         }

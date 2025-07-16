@@ -6,25 +6,23 @@ const Inode = @import("../structures/inode.zig").Inode;
 const Reader = @import("reader.zig").Reader;
 const Error = @import("../ext4_error.zig").Ext4Error;
 
-const EntryTraversal = @import("entry_traversal.zig").EntryTraversal;
+const DirectoryReader = @import("directory_reader.zig").DirectoryReader;
 
-/// Responsible for resolving filesystem paths to Entry structures
-pub const Navigator = struct {
+pub const PathResolver = struct {
     // Variables
     reader: *const Reader,
-    traversal: EntryTraversal,
+    directory_reader: DirectoryReader,
 
     // Lifecycle
-    pub fn init(reader: *const Reader) Navigator {
-        return Navigator{
+    pub fn init(reader: *const Reader) PathResolver {
+        return PathResolver{
             .reader = reader,
-            .traversal = EntryTraversal.init(reader),
+            .directory_reader = DirectoryReader.init(reader),
         };
     }
 
     // Public
-    /// Get root directory entry (inode 2)
-    pub fn getRootEntry(self: *const Navigator) !Entry {
+    pub fn getRootEntry(self: *const PathResolver) !Entry {
         const root_inode = try self.reader.readInode(2);
 
         if (!root_inode.isDirectory()) {
@@ -34,19 +32,15 @@ pub const Navigator = struct {
         return Entry.create(2, 1, Entry.FileType.DIR, "/");
     }
 
-    /// Resolve a filesystem path to an Entry
-    /// Path should be absolute (starting with /) or relative to root
-    pub fn getEntry(self: *const Navigator, allocator: Allocator, path: []const u8) !Entry {
+    pub fn resolvePath(self: *const PathResolver, allocator: Allocator, path: []const u8) !Entry {
         if (path.len == 0) {
             return Error.EntryNotFound;
         }
 
-        // Handle root
         if (std.mem.eql(u8, path, "/")) {
             return self.getRootEntry();
         }
 
-        // Start from root
         var current_entry = try self.getRootEntry();
 
         var path_components = std.ArrayList([]const u8).init(allocator);
@@ -55,13 +49,20 @@ pub const Navigator = struct {
         try self.splitPath(path, &path_components);
 
         for (path_components.items) |component| {
-            if (component.len == 0) continue; // Skip empty
+            if (component.len == 0) continue;
 
-            current_entry = try self.findEntryInDirectory(
+            const next_entry = try self.findEntryInDirectory(
                 allocator,
                 &current_entry,
                 component,
             );
+            
+            if (current_entry.name) |name| {
+                if (!std.mem.eql(u8, name, "/")) {
+                    allocator.free(name);
+                }
+            }
+            current_entry = next_entry;
         }
 
         return current_entry;
@@ -69,7 +70,7 @@ pub const Navigator = struct {
 
     // Private
     fn findEntryInDirectory(
-        self: *const Navigator,
+        self: *const PathResolver,
         allocator: Allocator,
         directory_entry: *const Entry,
         target_name: []const u8,
@@ -78,7 +79,7 @@ pub const Navigator = struct {
             return Error.NotDirectory;
         }
 
-        if (try self.traversal.findEntry(
+        if (try self.directory_reader.findInDirectory(
             allocator,
             directory_entry,
             target_name,
@@ -89,13 +90,11 @@ pub const Navigator = struct {
         return Error.EntryNotFound;
     }
 
-    /// Split a path into components
-    fn splitPath(self: *const Navigator, path: []const u8, components: *std.ArrayList([]const u8)) !void {
+    fn splitPath(self: *const PathResolver, path: []const u8, components: *std.ArrayList([]const u8)) !void {
         _ = self;
 
         var start: usize = 0;
 
-        // Skip slash
         if (path.len > 0 and path[0] == '/') {
             start = 1;
         }

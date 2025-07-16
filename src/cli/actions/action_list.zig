@@ -63,6 +63,7 @@ fn invoke(
             },
         }
     };
+    defer if (dir_entry.name) |name| allocator.free(name);
 
     if (!dir_entry.isDirectory()) {
         writer.print("Error: '{s}' is not a directory\n", .{path}) catch {};

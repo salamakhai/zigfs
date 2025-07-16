@@ -67,6 +67,7 @@ fn invoke(
             },
         }
     };
+    defer if (file_entry.name) |name| allocator.free(name);
 
     if (!file_entry.isFile()) {
         writer.print("Error: '{s}' is not a file\n", .{file_path}) catch {};

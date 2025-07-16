@@ -3,9 +3,9 @@ const fs = std.fs;
 const Allocator = std.mem.Allocator;
 
 const Reader = @import("operations/reader.zig").Reader;
-const Navigator = @import("operations/navigator.zig").Navigator;
-const EntryTraversal = @import("operations/entry_traversal.zig").EntryTraversal;
-const FileReader = @import("operations/file_reader.zig").FileReader;
+const PathResolver = @import("operations/path_resolver.zig").PathResolver;
+const DirectoryReader = @import("operations/directory_reader.zig").DirectoryReader;
+const FileOperations = @import("operations/file_operations.zig").FileOperations;
 
 pub const Ext4 = struct {
     // Types
@@ -24,9 +24,9 @@ pub const Ext4 = struct {
 
     // operations
     reader: Reader,
-    navigator: Navigator,
-    traversal: EntryTraversal,
-    file_reader: FileReader,
+    path_resolver: PathResolver,
+    directory_reader: DirectoryReader,
+    file_operations: FileOperations,
 
     // Lifecycle
     pub fn detect(file: fs.File) bool {
@@ -50,15 +50,15 @@ pub const Ext4 = struct {
             .allocator = allocator,
             .filename = try allocator.dupe(u8, formatted_name),
             .reader = undefined,
-            .navigator = undefined,
-            .traversal = undefined,
-            .file_reader = undefined,
+            .path_resolver = undefined,
+            .directory_reader = undefined,
+            .file_operations = undefined,
         };
 
         filesystem.reader = Reader.init(allocator, file, &filesystem.superblock);
-        filesystem.navigator = Navigator.init(&filesystem.reader);
-        filesystem.traversal = EntryTraversal.init(&filesystem.reader);
-        filesystem.file_reader = FileReader.init(&filesystem.reader);
+        filesystem.path_resolver = PathResolver.init(&filesystem.reader);
+        filesystem.directory_reader = DirectoryReader.init(&filesystem.reader);
+        filesystem.file_operations = FileOperations.init(&filesystem.reader);
 
         return filesystem;
     }
@@ -75,18 +75,18 @@ pub const Ext4 = struct {
     }
 
     pub fn getRootEntry(self: *Ext4) !Entry {
-        return self.navigator.getRootEntry();
+        return self.path_resolver.getRootEntry();
     }
 
     pub fn getEntry(self: *Ext4, allocator: Allocator, path: []const u8) !Entry {
-        return self.navigator.getEntry(allocator, path);
+        return self.path_resolver.resolvePath(allocator, path);
     }
 
     pub fn extractFile(self: *Ext4, entry: *const Entry) ![]u8 {
-        return self.file_reader.readFile(entry);
+        return self.file_operations.readContent(entry);
     }
 
     pub fn listDirectory(self: *Ext4, allocator: Allocator, entry: *const Entry) ![]Entry {
-        return self.traversal.listDirectory(allocator, entry);
+        return self.directory_reader.readDirectory(allocator, entry);
     }
 };

@@ -82,7 +82,7 @@ fn invoke(
         \\FILESYSTEM INFORMATION
         \\======================
         \\ Type: {s}
-        \\ Block Size: {s}
+        \\ Block Size:   {s:<}
         \\
     , .{
         fs_type,
