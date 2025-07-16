@@ -1,6 +1,8 @@
 const std = @import("std");
 const cli = @import("cli");
+
 const Core = cli.Core;
+const Command = Core.Command;
 
 const DebugAllocator = std.heap.DebugAllocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
@@ -12,6 +14,15 @@ pub const ExitCode = enum(u8) {
     MemoryError = 3,
     InitError = 4,
     SignalError = 5,
+};
+
+/// Supported commands
+pub const commands = &[_]Command{
+    cli.command_help,
+    cli.command_info,
+    cli.command_ls,
+    cli.command_cat,
+    cli.command_browse,
 };
 
 /// Application entry
@@ -28,10 +39,11 @@ pub fn main() !u8 {
     const std_reader = std.io.getStdIn().reader().any();
     const std_writer = std.io.getStdOut().writer().any();
 
-    const core = try cli.CreateCore(
+    const core = try Core.init(
         allocator,
         std_reader,
         std_writer,
+        commands,
     );
     defer core.deinit();
 
