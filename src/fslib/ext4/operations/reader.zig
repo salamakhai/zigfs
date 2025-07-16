@@ -1,157 +1,171 @@
 const std = @import("std");
-const fs = std.fs;
 const Allocator = std.mem.Allocator;
 
-const FilesystemError = @import("../ext4_error.zig").Ext4Error;
+const Error = @import("../error.zig").Ext4Error;
 
-const Superblock = @import("../structures/superblock.zig").Superblock;
-const Inode = @import("../structures/inode.zig").Inode;
-const BlockGroup = @import("../structures/block_group.zig").BlockGroup;
-const ExtentHeader = @import("../structures/extent.zig").ExtentHeader;
-const Extent = @import("../structures/extent.zig").Extent;
+const Entry = @import("../types/entry.zig").Entry;
+const Inode = @import("../types/inode.zig").Inode;
+const Superblock = @import("../types/superblock.zig").Superblock;
 
-const addressing = @import("../algorithms/addressing.zig");
-const parsing = @import("../algorithms/parsing.zig");
-const validation = @import("../algorithms/validation.zig");
+const DiskReader = @import("../disk/reader.zig").Reader;
+const extent_parsing = @import("../parsing/extents.zig");
 
-/// Low-level block and inode reading
 pub const Reader = struct {
-    // Variables
-    allocator: Allocator,
-    file: fs.File,
+    // Fields
+    reader: *const DiskReader,
     superblock: *const Superblock,
-    block_size: u32,
 
     // Lifecycle
-    pub fn init(
-        allocator: Allocator,
-        file: fs.File,
-        superblock: *const Superblock,
-    ) Reader {
+    pub fn init(reader: *const DiskReader, superblock: *const Superblock) Reader {
         return Reader{
-            .allocator = allocator,
-            .file = file,
+            .reader = reader,
             .superblock = superblock,
-            .block_size = superblock.blockSize(),
         };
     }
 
     // Public
-    pub fn readInode(self: *const Reader, inode_number: u32) !Inode {
-        if (inode_number == 0) {
-            return FilesystemError.ReadError;
+    pub fn isReadable(self: *const Reader, entry: *const Entry) !bool {
+        if (!entry.isFile()) {
+            return false;
         }
 
-        const block_group = addressing.inodeToBlockGroup(inode_number, self.superblock.layout.s_inodes_per_group);
-        const group_index = addressing.inodeToGroupIndex(inode_number, self.superblock.layout.s_inodes_per_group);
+        const inode_number = entry.inodeNumber();
+        const file_inode = self.reader.readInodeByNumber(
+            inode_number,
+            self.superblock.inodesPerGroup(),
+            256, // TODO: Get from superblock
+        ) catch {
+            return false;
+        };
 
-        const bgd = try self.readBlockGroupDescriptor(block_group);
-
-        const inode_offset = addressing.inodeTableOffset(
-            bgd.inodeTableBlock(),
-            group_index,
-            parsing.inodeSize(&self.superblock.layout),
-            self.block_size,
-        );
-
-        return self.readInodeAt(inode_offset);
+        return file_inode.isRegularFile();
     }
 
-    pub fn readInodeData(self: *const Reader, inode: *const Inode) ![]u8 {
+    pub fn getSize(self: *const Reader, entry: *const Entry) !u64 {
+        if (!entry.isFile()) {
+            return Error.NotFile;
+        }
+
+        const inode_number = entry.inodeNumber();
+        const file_inode = try self.reader.readInodeByNumber(
+            inode_number,
+            self.superblock.inodesPerGroup(),
+            256, // TODO: Get from superblock
+        );
+
+        if (!file_inode.isRegularFile()) {
+            return Error.NotFile;
+        }
+
+        return file_inode.size();
+    }
+
+    pub fn readContent(self: *const Reader, entry: *const Entry) ![]u8 {
+        if (!entry.isFile()) {
+            return Error.NotFile;
+        }
+
+        const inode_number = entry.inodeNumber();
+        const file_inode = try self.reader.readInodeByNumber(
+            inode_number,
+            self.superblock.inodesPerGroup(),
+            256, // TODO: Get from superblock
+        );
+
+        if (!file_inode.isRegularFile()) {
+            return Error.NotFile;
+        }
+
+        return try self.readInodeData(&file_inode);
+    }
+
+    pub fn readContentPartial(
+        self: *const Reader,
+        allocator: Allocator,
+        entry: *const Entry,
+        offset: u64,
+        size: u64,
+    ) ![]u8 {
+        if (!entry.isFile()) {
+            return Error.NotFile;
+        }
+
+        const full_data = try self.readContent(entry);
+        defer allocator.free(full_data);
+
+        if (offset >= full_data.len) {
+            return try allocator.alloc(u8, 0);
+        }
+
+        const start = offset;
+        const end = @min(offset + size, full_data.len);
+        const partial_size = end - start;
+
+        const partial_data = try allocator.alloc(u8, partial_size);
+        @memcpy(partial_data, full_data[start..end]);
+
+        return partial_data;
+    }
+
+    fn readInodeData(self: *const Reader, inode: *const Inode) ![]u8 {
         const data_size = inode.size();
 
         if (data_size == 0) {
-            return try self.allocator.alloc(u8, 0);
+            return try self.reader.allocator.alloc(u8, 0);
         }
 
-        const data = try self.allocator.alloc(u8, @intCast(data_size));
+        const data = try self.reader.allocator.alloc(u8, @intCast(data_size));
         try self.readFileContentWithExtents(data, inode);
 
         return data;
     }
 
-    // Private
     fn readFileContentWithExtents(self: *const Reader, data: []u8, inode: *const Inode) !void {
         const block_data = inode.blockData();
         const extent_data = std.mem.asBytes(&block_data);
 
-        const header = parsing.parseExtentHeader(extent_data) orelse {
-            return FilesystemError.ReadError;
+        const header = extent_parsing.parseExtentHeader(extent_data) orelse {
+            return Error.ReadError;
         };
 
-        if (parsing.isExtentLeaf(header)) {
-            // Use algorithm to extract extent mappings
-
+        if (extent_parsing.isExtentLeaf(header)) {
             var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
             defer arena.deinit();
             const allocator = arena.allocator();
 
-            const mappings = parsing.extractExtentMappings(
+            const mappings = extent_parsing.parseExtentMappings(
                 extent_data,
                 allocator,
             ) catch {
-                return FilesystemError.ReadError;
+                return Error.ReadError;
             };
 
-            // Read each extent mapping
             for (mappings) |mapping| {
                 try self.readExtentMapping(data, mapping);
             }
         } else {
-            // TODO: Handle internal extent tree nodes
-            return FilesystemError.ReadError;
+            return Error.ReadError;
         }
     }
 
-    fn readBlockGroupDescriptor(self: *const Reader, group_number: u32) !BlockGroup {
-        const bgd_offset = addressing.blockGroupDescriptorOffset(
-            group_number,
-            self.block_size,
-        );
-
-        try self.file.seekTo(bgd_offset);
-
-        var bgd: BlockGroup = undefined;
-        const read_bytes = try self.file.read(std.mem.asBytes(&bgd));
-        if (read_bytes < @sizeOf(BlockGroup)) {
-            return FilesystemError.ReadError;
-        }
-
-        return bgd;
-    }
-
-    fn readInodeAt(self: *const Reader, offset: u64) !Inode {
-        try self.file.seekTo(offset);
-
-        var inode: Inode = undefined;
-        const read_bytes = try self.file.read(std.mem.asBytes(&inode));
-
-        if (read_bytes < @sizeOf(Inode)) {
-            return FilesystemError.ReadError;
-        }
-
-        return inode;
-    }
-
-    fn readExtentMapping(self: *const Reader, data: []u8, mapping: parsing.ExtentMapping) !void {
-        const logical_offset = mapping.logicalByteOffset(self.block_size);
-        const physical_offset = mapping.physicalByteOffset(self.block_size);
-        const extent_size = mapping.sizeInBytes(self.block_size);
+    fn readExtentMapping(self: *const Reader, data: []u8, mapping: extent_parsing.ExtentMapping) !void {
+        const logical_offset = mapping.logicalByteOffset(self.superblock.blockSize());
+        const physical_offset = mapping.physicalByteOffset(self.superblock.blockSize());
+        const extent_size = mapping.sizeInBytes(self.superblock.blockSize());
 
         const bytes_to_read = @min(extent_size, data.len - logical_offset);
 
         if (logical_offset + bytes_to_read > data.len) {
-            return FilesystemError.ReadError;
+            return Error.ReadError;
         }
 
-        try self.file.seekTo(physical_offset);
-
-        const read_bytes = try self.file.read(
+        const read_bytes = try self.reader.readAt(
+            physical_offset,
             data[logical_offset .. logical_offset + bytes_to_read],
         );
 
         if (read_bytes != bytes_to_read) {
-            return FilesystemError.ReadError;
+            return Error.ReadError;
         }
     }
 };

@@ -1,9 +1,27 @@
-//! Inode validation algorithms for EXT4 filesystem
-
 const std = @import("std");
-const InodeLayout = @import("../layout/inode_layout.zig").InodeLayout;
+const InodeLayout = @import("../disk/layout.zig").InodeLayout;
 
-// === Public ===
+// State
+fn isDirectory(inode_layout: *const InodeLayout) bool {
+    const mode = inode_layout.i_mode;
+    return (mode & 0xF000) == 0x4000;
+}
+
+fn isRegularFile(inode_layout: *const InodeLayout) bool {
+    const mode = inode_layout.i_mode;
+    return (mode & 0xF000) == 0x8000;
+}
+
+fn hasData(inode_layout: *const InodeLayout) bool {
+    return inode_layout.i_size_lo > 0 or inode_layout.i_size_hi > 0;
+}
+
+// Parsers
+pub fn parseInodeBlockData(inode_layout: *const InodeLayout) []const u8 {
+    return std.mem.asBytes(&inode_layout.i_block);
+}
+
+// Validators
 pub fn validateInodeNumber(inode_number: u32, total_inodes: u32) bool {
     return inode_number > 0 and inode_number <= total_inodes;
 }
@@ -18,7 +36,6 @@ pub fn validateInodeMode(inode_layout: *const InodeLayout) bool {
 }
 
 pub fn validateInodeSize(inode_layout: *const InodeLayout) bool {
-    // Check for reasonable file size (not exceeding maximum)
     const size_lo = inode_layout.i_size_lo;
     const size_hi = inode_layout.i_size_hi;
 
@@ -40,12 +57,10 @@ pub fn validateInodeTimestamps(inode_layout: *const InodeLayout) bool {
 pub fn validateInodeLinkCount(inode_layout: *const InodeLayout) bool {
     const links_count = inode_layout.i_links_count;
 
-    // Directory must have at least 2 links (. and ..)
     if (isDirectory(inode_layout) and links_count < 2) {
         return false;
     }
 
-    // Regular file must have at least 1 link
     if (isRegularFile(inode_layout) and links_count == 0) {
         return false;
     }
@@ -71,20 +86,4 @@ pub fn validate(inode_layout: *const InodeLayout) bool {
     if (!validateInodeBlockCount(inode_layout)) return false;
 
     return true;
-}
-
-// === Utils ===
-fn isDirectory(inode_layout: *const InodeLayout) bool {
-    const mode = inode_layout.i_mode;
-    return (mode & 0xF000) == 0x4000; // S_IFDIR
-}
-
-fn isRegularFile(inode_layout: *const InodeLayout) bool {
-    const mode = inode_layout.i_mode;
-    return (mode & 0xF000) == 0x8000; // S_IFREG
-}
-
-/// Check if inode has data blocks
-fn hasData(inode_layout: *const InodeLayout) bool {
-    return inode_layout.i_size_lo > 0 or inode_layout.i_size_hi > 0;
 }

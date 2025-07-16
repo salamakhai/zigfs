@@ -1,15 +1,12 @@
-//! Extent parsing algorithms for EXT4 filesystem
-
 const std = @import("std");
-const ExtentTreeLayout = @import("../layout/extent_layout.zig").ExtentTreeLayout;
+const Allocator = std.mem.Allocator;
+const ExtentTreeLayout = @import("../disk/layout.zig").ExtentTreeLayout;
 
 const ExtentHeader = ExtentTreeLayout.ExtentHeader;
 const Extent = ExtentTreeLayout.Extent;
 const ExtentIndex = ExtentTreeLayout.ExtentIndex;
 
-const Allocator = std.mem.Allocator;
-
-// === Types ===
+// Types
 pub const ExtentMapping = struct {
     logical_start_block: u32,
     physical_start_block: u64,
@@ -34,7 +31,12 @@ pub const ExtentMapping = struct {
     }
 };
 
-// === Public ===
+// State
+pub fn isExtentLeaf(header: *const ExtentHeader) bool {
+    return header.eh_depth == 0;
+}
+
+// Parsers
 pub fn parseExtentHeader(extent_data: []const u8) ?*const ExtentHeader {
     if (extent_data.len < @sizeOf(ExtentHeader)) {
         return null;
@@ -49,11 +51,7 @@ pub fn parseExtentHeader(extent_data: []const u8) ?*const ExtentHeader {
     return header;
 }
 
-pub fn isExtentLeaf(header: *const ExtentHeader) bool {
-    return header.eh_depth == 0;
-}
-
-pub fn extractExtentMappings(
+pub fn parseExtentMappings(
     extent_data: []const u8,
     allocator: Allocator,
 ) ![]ExtentMapping {
@@ -82,7 +80,7 @@ pub fn extractExtentMappings(
     return mappings;
 }
 
-pub fn extractExtentIndices(
+pub fn parseExtentIndices(
     extent_data: []const u8,
     allocator: Allocator,
 ) ![]ExtentIndex {
@@ -111,7 +109,6 @@ pub fn extractExtentIndices(
     return indices;
 }
 
-// === Utils ===
 fn parseExtentEntry(extent: *const Extent) ExtentMapping {
     const physical_start = (@as(u64, extent.ee_start_hi) << 32) | @as(u64, extent.ee_start_lo);
     const is_uninitialized = (extent.ee_len & ExtentTreeLayout.EXT4_EXTENT_FLAGS.UNWRITTEN) != 0;
@@ -123,4 +120,36 @@ fn parseExtentEntry(extent: *const Extent) ExtentMapping {
         .block_count = actual_length,
         .is_uninitialized = is_uninitialized,
     };
+}
+
+// Validators
+pub fn validateHeaderMagic(header: *const ExtentHeader) bool {
+    return header.eh_magic == ExtentHeader.MAGIC_NUMBER;
+}
+
+pub fn validateHeader(header: *const ExtentHeader) bool {
+    if (!validateHeaderMagic(header)) return false;
+    if (header.eh_entries == 0) return false;
+    if (header.eh_depth > 5) return false;
+
+    return true;
+}
+
+pub fn validateExtentEntry(extent: *const Extent) bool {
+    const actual_length = extent.ee_len & ~ExtentTreeLayout.EXT4_EXTENT_FLAGS.UNWRITTEN;
+
+    if (actual_length == 0) return false;
+    if (actual_length > 32768) return false;
+    if (extent.ee_block == 0xFFFFFFFF) return false;
+
+    return true;
+}
+
+pub fn validateExtentIndex(index: *const ExtentIndex) bool {
+    if (index.ei_block == 0xFFFFFFFF) return false;
+
+    const physical_block = (@as(u64, index.ei_leaf_hi) << 32) | @as(u64, index.ei_leaf_lo);
+    if (physical_block == 0) return false;
+
+    return true;
 }

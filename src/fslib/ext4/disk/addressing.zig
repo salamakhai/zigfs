@@ -2,8 +2,8 @@
 //! Converters from logical positions to physical disk addresses
 
 const std = @import("std");
-const SuperblockLayout = @import("../layout/superblock_layout.zig").SuperblockLayout;
-const BlockGroupLayout = @import("../layout/block_group_layout.zig").BlockGroupLayout;
+const SuperblockLayout = @import("layout/superblock_layout.zig").SuperblockLayout;
+const BlockGroupLayout = @import("layout/block_group_layout.zig").BlockGroupLayout;
 
 // === Public ===
 pub fn blockToOffset(block_number: u64, block_size: u32) u64 {

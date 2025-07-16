@@ -114,7 +114,7 @@ fn invoke(
             "unknown";
 
         // Get inode information for size and mode
-        const inode = ext4_fs.reader.readInode(entry.inodeNumber()) catch |err| {
+        const inode = ext4_fs.disk_reader.readInodeByNumber(entry.inodeNumber(), ext4_fs.superblock.inodesPerGroup(), 256) catch |err| {
             writer.print("Error reading inode for '{s}': {!}\n", .{ entry_name, err }) catch {};
             continue;
         };

@@ -1,29 +1,36 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const Entry = @import("../structures/entry.zig").Entry;
-const Inode = @import("../structures/inode.zig").Inode;
-const Reader = @import("reader.zig").Reader;
-const Error = @import("../ext4_error.zig").Ext4Error;
+const Error = @import("../error.zig").Ext4Error;
 
-const DirectoryReader = @import("directory_reader.zig").DirectoryReader;
+const Entry = @import("../types/entry.zig").Entry;
+const Inode = @import("../types/inode.zig").Inode;
+const Superblock = @import("../types/superblock.zig").Superblock;
+const DiskReader = @import("../disk/reader.zig").Reader;
+const Walker = @import("walker.zig").Walker;
 
-pub const PathResolver = struct {
-    // Variables
-    reader: *const Reader,
-    directory_reader: DirectoryReader,
+pub const Resolver = struct {
+    // Fields
+    reader: *const DiskReader,
+    superblock: *const Superblock,
+    walker: Walker,
 
     // Lifecycle
-    pub fn init(reader: *const Reader) PathResolver {
-        return PathResolver{
+    pub fn init(reader: *const DiskReader, superblock: *const Superblock) Resolver {
+        return Resolver{
             .reader = reader,
-            .directory_reader = DirectoryReader.init(reader),
+            .superblock = superblock,
+            .walker = Walker.init(reader, superblock),
         };
     }
 
     // Public
-    pub fn getRootEntry(self: *const PathResolver) !Entry {
-        const root_inode = try self.reader.readInode(2);
+    pub fn getRootEntry(self: *const Resolver) !Entry {
+        const root_inode = try self.reader.readInodeByNumber(
+            2,
+            self.superblock.inodesPerGroup(),
+            256, // TODO: Get from superblock
+        );
 
         if (!root_inode.isDirectory()) {
             return Error.NotDirectory;
@@ -32,7 +39,7 @@ pub const PathResolver = struct {
         return Entry.create(2, 1, Entry.FileType.DIR, "/");
     }
 
-    pub fn resolvePath(self: *const PathResolver, allocator: Allocator, path: []const u8) !Entry {
+    pub fn resolvePath(self: *const Resolver, allocator: Allocator, path: []const u8) !Entry {
         if (path.len == 0) {
             return Error.EntryNotFound;
         }
@@ -56,7 +63,7 @@ pub const PathResolver = struct {
                 &current_entry,
                 component,
             );
-            
+
             if (current_entry.name) |name| {
                 if (!std.mem.eql(u8, name, "/")) {
                     allocator.free(name);
@@ -70,7 +77,7 @@ pub const PathResolver = struct {
 
     // Private
     fn findEntryInDirectory(
-        self: *const PathResolver,
+        self: *const Resolver,
         allocator: Allocator,
         directory_entry: *const Entry,
         target_name: []const u8,
@@ -79,7 +86,7 @@ pub const PathResolver = struct {
             return Error.NotDirectory;
         }
 
-        if (try self.directory_reader.findInDirectory(
+        if (try self.walker.findInDirectory(
             allocator,
             directory_entry,
             target_name,
@@ -90,7 +97,7 @@ pub const PathResolver = struct {
         return Error.EntryNotFound;
     }
 
-    fn splitPath(self: *const PathResolver, path: []const u8, components: *std.ArrayList([]const u8)) !void {
+    fn splitPath(self: *const Resolver, path: []const u8, components: *std.ArrayList([]const u8)) !void {
         _ = self;
 
         var start: usize = 0;

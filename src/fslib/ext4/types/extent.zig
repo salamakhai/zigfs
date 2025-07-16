@@ -1,13 +1,10 @@
 const std = @import("std");
-
-const extent_layout = @import("../layout/extent_layout.zig");
+const extent_layout = @import("../disk/layout.zig");
 
 const ExtentTreeLayout = extent_layout.ExtentTreeLayout;
 const ExtentHeaderLayout = ExtentTreeLayout.ExtentHeader;
 const ExtentLayout = ExtentTreeLayout.Extent;
 const ExtentIndexLayout = ExtentTreeLayout.ExtentIndex;
-
-const EXTENT_CONSTANTS = ExtentTreeLayout.EXTENT_CONSTANTS;
 
 pub const ExtentHeader = extern struct {
     layout: ExtentHeaderLayout,
@@ -18,6 +15,22 @@ pub const ExtentHeader = extern struct {
 
     pub fn isLeaf(self: *const ExtentHeader) bool {
         return self.layout.eh_depth == 0;
+    }
+
+    pub fn entries(self: *const ExtentHeader) u16 {
+        return self.layout.eh_entries;
+    }
+
+    pub fn maxEntries(self: *const ExtentHeader) u16 {
+        return self.layout.eh_max;
+    }
+
+    pub fn depth(self: *const ExtentHeader) u16 {
+        return self.layout.eh_depth;
+    }
+
+    pub fn generation(self: *const ExtentHeader) u32 {
+        return self.layout.eh_generation;
     }
 };
 
@@ -42,5 +55,9 @@ pub const ExtentIndex = extern struct {
 
     pub fn leafBlock(self: *const ExtentIndex) u64 {
         return (@as(u64, self.layout.ei_leaf_hi) << 32) | @as(u64, self.layout.ei_leaf_lo);
+    }
+
+    pub fn logicalBlock(self: *const ExtentIndex) u32 {
+        return self.layout.ei_block;
     }
 };

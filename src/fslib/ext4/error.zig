@@ -1,0 +1,15 @@
+pub const Ext4Error = error{
+    ReadError,
+    InvalidMagicNumber,
+    InvalidBlockSize,
+    NoBlocks,
+    NoInodes,
+    InvalidBlocksPerGroup,
+    BlockSizeNotPowerOf2,
+    BlockSizeTooLarge,
+    NotDirectory,
+    NotFile,
+    EntryNotFound,
+    InvalidInodeNumber,
+    InvalidName,
+};

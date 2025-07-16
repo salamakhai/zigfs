@@ -1,17 +1,13 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-
-const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
+const EntryLayout = @import("../disk/layout.zig").EntryLayout;
 
 pub const Entry = struct {
-    // Variables
     layout: EntryLayout,
     name: ?[]const u8 = null,
 
-    // Types
     pub const FileType = EntryLayout.FILE_TYPES;
 
-    // Lifecycle
     pub fn fromLayout(layout: EntryLayout) Entry {
         return Entry{ .layout = layout };
     }
@@ -28,7 +24,6 @@ pub const Entry = struct {
         };
     }
 
-    // Properties
     pub fn getCachedName(self: *const Entry) []const u8 {
         return self.name;
     }
@@ -72,7 +67,6 @@ pub const Entry = struct {
         return self.layout.file_type;
     }
 
-    // Type Checking
     pub fn isDirectory(self: *const Entry) bool {
         return self.layout.file_type == EntryLayout.FILE_TYPES.DIR;
     }
@@ -105,7 +99,6 @@ pub const Entry = struct {
         return self.isCharacterDevice() or self.isBlockDevice();
     }
 
-    // Validation
     pub fn isValid(self: *const Entry) bool {
         return self.layout.inode != 0 and
             self.layout.rec_len >= @sizeOf(EntryLayout) and
@@ -113,18 +106,15 @@ pub const Entry = struct {
             self.layout.name_len <= EntryLayout.CONSTRAINTS.MAX_NAME_LEN;
     }
 
-    /// Check if entry is deleted (inode = 0, null inode)
     pub fn isDeleted(self: *const Entry) bool {
         return self.layout.inode == 0;
     }
 
-    /// Check if this is current directory entry (".")
     pub fn isCurrentDirectory(self: *const Entry, directory_data: []const u8, entry_offset: usize) bool {
         const name = self.getName(directory_data, entry_offset);
         return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.CURRENT_DIR);
     }
 
-    /// Check if this is parent directory entry ("..")
     pub fn isParentDirectory(self: *const Entry, directory_data: []const u8, entry_offset: usize) bool {
         const name = self.getName(directory_data, entry_offset);
         return std.mem.eql(u8, name, EntryLayout.SPECIAL_ENTRIES.PARENT_DIR);
@@ -134,7 +124,6 @@ pub const Entry = struct {
         return self.isCurrentDirectory(directory_data, entry_offset) or self.isParentDirectory(directory_data, entry_offset);
     }
 
-    // Utils
     pub fn nextEntryOffset(self: *const Entry, current_offset: usize) usize {
         return current_offset + self.recordLength();
     }
@@ -148,7 +137,6 @@ pub const Entry = struct {
         return (self.layout.rec_len % EntryLayout.CONSTRAINTS.REC_LEN_ALIGNMENT) == 0;
     }
 
-    // Comparison
     pub fn eql(self: *const Entry, other: *const Entry) bool {
         return self.layout.inode == other.layout.inode;
     }

@@ -2,12 +2,12 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 pub const Filesystem = struct {
-    // Variables
+    // Fields
     filesystem: Union,
     mounted_type: Type,
 
     // Types
-    pub const Ext4 = @import("ext4/ext4_fs.zig").Ext4;
+    pub const Ext4 = @import("ext4/ext4.zig").Ext4;
     pub const Type = enum {
         ext4,
     };

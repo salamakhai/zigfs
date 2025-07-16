@@ -1,24 +1,31 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-const Entry = @import("../structures/entry.zig").Entry;
-const Inode = @import("../structures/inode.zig").Inode;
-const Reader = @import("reader.zig").Reader;
-const Error = @import("../ext4_error.zig").Ext4Error;
+const Error = @import("../error.zig").Ext4Error;
 
-const parsing = @import("../algorithms/parsing.zig");
+const Entry = @import("../types/entry.zig").Entry;
+const Inode = @import("../types/inode.zig").Inode;
+const Superblock = @import("../types/superblock.zig").Superblock;
+const Reader = @import("../disk/reader.zig").Reader;
 
-pub const DirectoryReader = struct {
+const parsing = @import("../parsing/entries.zig");
+
+pub const Walker = struct {
+    // Fields
     reader: *const Reader,
+    superblock: *const Superblock,
 
-    pub fn init(reader: *const Reader) DirectoryReader {
-        return DirectoryReader{
+    // Lifecycle
+    pub fn init(reader: *const Reader, superblock: *const Superblock) Walker {
+        return Walker{
             .reader = reader,
+            .superblock = superblock,
         };
     }
 
+    // Public
     pub fn readDirectory(
-        self: *const DirectoryReader,
+        self: *const Walker,
         allocator: Allocator,
         entry: *const Entry,
     ) ![]Entry {
@@ -27,36 +34,25 @@ pub const DirectoryReader = struct {
         }
 
         const inode_number = entry.inodeNumber();
-        const inode = try self.reader.readInode(inode_number);
+        const inode = try self.reader.readInodeByNumber(
+            inode_number,
+            self.superblock.inodesPerGroup(),
+            256, // TODO: Get from superblock
+        );
 
         if (!inode.isDirectory()) {
             return Error.NotDirectory;
         }
 
-        const directory_data = try self.reader.readInodeData(&inode);
+        // TODO: Read via extents
+        const directory_data = try self.reader.readAlloc(0, inode.size());
         defer allocator.free(directory_data);
 
-        const parsed_entries = try parsing.parseDirectoryEntries(directory_data, allocator);
-        defer {
-            for (parsed_entries) |parsed_entry| {
-                allocator.free(parsed_entry.name);
-            }
-            allocator.free(parsed_entries);
-        }
-
-        var entries = try allocator.alloc(Entry, parsed_entries.len);
-        for (parsed_entries, 0..) |parsed_entry, i| {
-            entries[i] = Entry{
-                .layout = parsed_entry.layout,
-                .name = try allocator.dupe(u8, parsed_entry.name),
-            };
-        }
-
-        return entries;
+        return parsing.parseDirectoryEntries(directory_data, allocator);
     }
 
     pub fn findInDirectory(
-        self: *const DirectoryReader,
+        self: *const Walker,
         allocator: Allocator,
         directory_entry: *const Entry,
         target_name: []const u8,

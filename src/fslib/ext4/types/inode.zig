@@ -1,25 +1,17 @@
 const std = @import("std");
-const InodeLayout = @import("../layout/inode_layout.zig").InodeLayout;
+const InodeLayout = @import("../disk/layout.zig").InodeLayout;
 
-/// High-level wrapper for EXT4 inode layout
-///
-/// Provides convenient methods for working with inodes
-/// without exposing the underlying layout details.
 pub const Inode = struct {
-    // Variables
     layout: InodeLayout,
 
-    // Lifecycle
     pub fn fromLayout(layout: InodeLayout) Inode {
         return Inode{ .layout = layout };
     }
 
-    // Public
     pub fn blockData(self: *const Inode) [60]u8 {
         return std.mem.asBytes(&self.layout.i_block).*;
     }
 
-    // Types
     pub fn isDirectory(self: *const Inode) bool {
         return (self.layout.i_mode & InodeLayout.FILE_TYPE_MASK) == InodeLayout.FILE_TYPE_DIR;
     }
@@ -52,7 +44,6 @@ pub const Inode = struct {
         return self.isCharacterDevice() or self.isBlockDevice();
     }
 
-    // Size Information
     pub fn size(self: *const Inode) u64 {
         return @as(u64, self.layout.i_size_lo) | (@as(u64, self.layout.i_size_high) << 32);
     }
@@ -62,13 +53,10 @@ pub const Inode = struct {
         return (file_size + block_size - 1) / block_size;
     }
 
-    // Permissions
-    /// Get raw mode value
     pub fn mode(self: *const Inode) u16 {
         return self.layout.i_mode;
     }
 
-    /// Get file permissions (without type bits)
     pub fn permissions(self: *const Inode) u16 {
         return self.layout.i_mode & InodeLayout.PERM_MASK;
     }
@@ -78,7 +66,6 @@ pub const Inode = struct {
 
         const file_mode = self.layout.i_mode;
 
-        // File type character
         buffer[0] = switch (file_mode & InodeLayout.FILE_TYPE_MASK) {
             InodeLayout.FILE_TYPE_DIR => 'd',
             InodeLayout.FILE_TYPE_REGULAR => '-',
@@ -90,7 +77,6 @@ pub const Inode = struct {
             else => '?',
         };
 
-        // User permissions
         buffer[1] = if (file_mode & InodeLayout.S_IRUSR != 0) 'r' else '-';
         buffer[2] = if (file_mode & InodeLayout.S_IWUSR != 0) 'w' else '-';
         buffer[3] = if (file_mode & InodeLayout.S_IXUSR != 0)
@@ -98,7 +84,6 @@ pub const Inode = struct {
         else
             (if (file_mode & InodeLayout.S_ISUID != 0) 'S' else '-');
 
-        // Group permissions
         buffer[4] = if (file_mode & InodeLayout.S_IRGRP != 0) 'r' else '-';
         buffer[5] = if (file_mode & InodeLayout.S_IWGRP != 0) 'w' else '-';
         buffer[6] = if (file_mode & InodeLayout.S_IXGRP != 0)
@@ -106,7 +91,6 @@ pub const Inode = struct {
         else
             (if (file_mode & InodeLayout.S_ISGID != 0) 'S' else '-');
 
-        // Others permissions
         buffer[7] = if (file_mode & InodeLayout.S_IROTH != 0) 'r' else '-';
         buffer[8] = if (file_mode & InodeLayout.S_IWOTH != 0) 'w' else '-';
         buffer[9] = if (file_mode & InodeLayout.S_IXOTH != 0)

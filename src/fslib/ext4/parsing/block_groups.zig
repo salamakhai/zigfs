@@ -1,10 +1,17 @@
-//! Block group validation algorithms for EXT4 filesystem
-
 const std = @import("std");
-const SuperblockLayout = @import("../layout/superblock_layout.zig").SuperblockLayout;
-const BlockGroupLayout = @import("../layout/block_group_layout.zig").BlockGroupLayout;
+const BlockGroupLayout = @import("../disk/layout.zig").BlockGroupLayout;
+const SuperblockLayout = @import("../disk/layout.zig").SuperblockLayout;
 
-// === Public ===
+// Parsers
+pub fn parseBlockGroupDescriptor(bgd_data: []const u8) ?*const BlockGroupLayout {
+    if (bgd_data.len < @sizeOf(BlockGroupLayout)) {
+        return null;
+    }
+
+    return @as(*const BlockGroupLayout, @ptrCast(@alignCast(bgd_data.ptr)));
+}
+
+// Validators
 pub fn validateBlockGroupNumber(block_group: u32, total_block_groups: u32) bool {
     return block_group < total_block_groups;
 }
@@ -12,8 +19,6 @@ pub fn validateBlockGroupNumber(block_group: u32, total_block_groups: u32) bool 
 pub fn validateDescriptor(bgd: *const BlockGroupLayout, superblock_layout: *const SuperblockLayout) bool {
     _ = bgd;
     _ = superblock_layout;
-
-    // TODO: Implement block group descriptor validation
 
     return true;
 }

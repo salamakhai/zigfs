@@ -1,18 +1,17 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const EntryLayout = @import("../layout/entry_layout.zig").EntryLayout;
+const EntryLayout = @import("../disk/layout.zig").EntryLayout;
+const Entry = @import("../types/entry.zig").Entry;
 
-const validateEntry = @import("validation.zig").validateEntry;
-
-// === Types ===
+// Types
 pub const ParsedEntry = struct {
     layout: EntryLayout,
     name: []const u8,
 };
 
-// === Public ===
-pub fn parseDirectoryEntries(directory_data: []const u8, allocator: Allocator) ![]ParsedEntry {
-    var entries = std.ArrayList(ParsedEntry).init(allocator);
+// Parsers
+pub fn parseDirectoryEntries(directory_data: []const u8, allocator: Allocator) ![]Entry {
+    var entries = std.ArrayList(Entry).init(allocator);
     defer entries.deinit();
 
     var offset: usize = 0;
@@ -38,7 +37,7 @@ pub fn parseDirectoryEntries(directory_data: []const u8, allocator: Allocator) !
 
         if (name_end <= directory_data.len) {
             const name = try allocator.dupe(u8, directory_data[name_start..name_end]);
-            const entry = ParsedEntry{
+            const entry = Entry{
                 .layout = entry_layout.*,
                 .name = name,
             };
@@ -49,4 +48,30 @@ pub fn parseDirectoryEntries(directory_data: []const u8, allocator: Allocator) !
     }
 
     return entries.toOwnedSlice();
+}
+
+// Validators
+pub fn validateEntry(entry: *const EntryLayout, available_data: usize) bool {
+    if (entry.rec_len < @sizeOf(EntryLayout)) {
+        return false;
+    }
+
+    if (entry.name_len > EntryLayout.CONSTRAINTS.MAX_NAME_LEN) {
+        return false;
+    }
+
+    if (entry.rec_len % EntryLayout.CONSTRAINTS.REC_LEN_ALIGNMENT != 0) {
+        return false;
+    }
+
+    if (entry.rec_len > available_data) {
+        return false;
+    }
+
+    const name_space_needed = @sizeOf(EntryLayout) + entry.name_len;
+    if (name_space_needed > entry.rec_len) {
+        return false;
+    }
+
+    return true;
 }
