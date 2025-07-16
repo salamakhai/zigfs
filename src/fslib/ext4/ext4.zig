@@ -3,9 +3,6 @@ const fs = std.fs;
 const Allocator = std.mem.Allocator;
 
 const DiskReader = @import("disk/reader.zig").Reader;
-const Resolver = @import("operations/resolver.zig").Resolver;
-const Walker = @import("operations/walker.zig").Walker;
-const FileReader = @import("operations/reader.zig").Reader;
 
 pub const Ext4 = struct {
     // Types
@@ -14,19 +11,17 @@ pub const Ext4 = struct {
     pub const Inode = @import("types/inode.zig").Inode;
     pub const Error = @import("error.zig").Ext4Error;
 
+    const reader = @import("operations/reader.zig");
+    const resolver = @import("operations/resolver.zig");
+    const walker = @import("operations/walker.zig");
+
     // Fields
     file: fs.File,
     allocator: Allocator,
     filename: []u8,
 
-    // structures
     superblock: Superblock,
-
-    // parsing
     disk_reader: DiskReader,
-    resolver: Resolver,
-    walker: Walker,
-    file_reader: FileReader,
 
     // Lifecycle
     pub fn detect(file: fs.File) bool {
@@ -49,16 +44,8 @@ pub const Ext4 = struct {
             .superblock = superblock,
             .allocator = allocator,
             .filename = try allocator.dupe(u8, formatted_name),
-            .disk_reader = undefined,
-            .resolver = undefined,
-            .walker = undefined,
-            .file_reader = undefined,
+            .disk_reader = DiskReader.init(allocator, file, superblock.blockSize()),
         };
-
-        filesystem.disk_reader = DiskReader.init(allocator, file, filesystem.superblock.blockSize());
-        filesystem.resolver = Resolver.init(&filesystem.disk_reader, &filesystem.superblock);
-        filesystem.walker = Walker.init(&filesystem.disk_reader, &filesystem.superblock);
-        filesystem.file_reader = FileReader.init(&filesystem.disk_reader, &filesystem.superblock);
 
         return filesystem;
     }
@@ -75,18 +62,73 @@ pub const Ext4 = struct {
     }
 
     pub fn getRootEntry(self: *Ext4) !Entry {
-        return self.resolver.getRootEntry();
+        return resolver.getRootEntry(&self.disk_reader, &self.superblock);
     }
 
     pub fn getEntry(self: *Ext4, allocator: Allocator, path: []const u8) !Entry {
-        return self.resolver.resolvePath(allocator, path);
+        return resolver.resolvePath(
+            allocator,
+            &self.disk_reader,
+            &self.superblock,
+            path,
+        );
     }
 
-    pub fn extractFile(self: *Ext4, entry: *const Entry) ![]u8 {
-        return self.file_reader.readContent(entry);
+    pub fn readFile(self: *Ext4, allocator: Allocator, entry: *const Entry) ![]u8 {
+        return reader.readContent(
+            allocator,
+            &self.disk_reader,
+            &self.superblock,
+            entry,
+        );
+    }
+
+    pub fn readFilePartial(
+        self: *Ext4,
+        allocator: Allocator,
+        entry: *const Entry,
+        offset: u64,
+        size: u64,
+    ) ![]u8 {
+        return reader.readContentPartial(
+            allocator,
+            &self.disk_reader,
+            &self.superblock,
+            entry,
+            offset,
+            size,
+        );
+    }
+
+    pub fn getFileSize(self: *Ext4, entry: *const Entry) !u64 {
+        return reader.getSize(&self.disk_reader, &self.superblock, entry);
+    }
+
+    pub fn isFileReadable(self: *Ext4, entry: *const Entry) bool {
+        return reader.isReadable(&self.disk_reader, &self.superblock, entry);
     }
 
     pub fn listDirectory(self: *Ext4, allocator: Allocator, entry: *const Entry) ![]Entry {
-        return self.walker.readDirectory(allocator, entry);
+        return walker.readDirectory(
+            allocator,
+            &self.disk_reader,
+            &self.superblock,
+            entry,
+        );
+    }
+
+    pub fn findInDirectory(
+        self: *Ext4,
+        allocator: Allocator,
+        directory_entry: *const Entry,
+        target_name: []const u8,
+    ) !?Entry {
+        return walker.findInDirectory(
+            allocator,
+            &self.disk_reader,
+            &self.superblock,
+            directory_entry,
+            target_name,
+        );
     }
 };

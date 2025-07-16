@@ -1,5 +1,5 @@
 const std = @import("std");
-const SuperblockLayout = @import("../disk/layout/superblock_layout.zig").SuperblockLayout;
+const SuperblockLayout = @import("../disk/layout.zig").SuperblockLayout;
 
 // Types
 pub const ValidationResult = struct {

@@ -12,7 +12,9 @@ pub const Superblock = struct {
         };
 
         var magic_bytes: u16 = undefined;
-        const bytes_read = file.readAll(std.mem.asBytes(&magic_bytes)) catch return false;
+        const bytes_read = file.readAll(std.mem.asBytes(&magic_bytes)) catch {
+            return false;
+        };
 
         return bytes_read == @sizeOf(u16) and magic_bytes == SuperblockLayout.MAGIC_NUMBER;
     }

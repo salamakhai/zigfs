@@ -8,10 +8,6 @@ pub const Entry = struct {
 
     pub const FileType = EntryLayout.FILE_TYPES;
 
-    pub fn fromLayout(layout: EntryLayout) Entry {
-        return Entry{ .layout = layout };
-    }
-
     pub fn create(inode_number: u32, name_len: u8, file_type: u8, name: []const u8) Entry {
         return Entry{
             .layout = EntryLayout{
@@ -31,11 +27,11 @@ pub const Entry = struct {
     pub fn getName(self: *const Entry, directory_data: []const u8, entry_offset: usize) []const u8 {
         const name_start = entry_offset + @sizeOf(EntryLayout);
         const name_end = name_start + self.layout.name_len;
-        
+
         if (name_end <= directory_data.len) {
             return directory_data[name_start..name_end];
         }
-        
+
         return &[_]u8{};
     }
 
@@ -62,7 +58,7 @@ pub const Entry = struct {
     pub fn rawFileType(self: *const Entry) u8 {
         return self.layout.file_type;
     }
-    
+
     pub fn fileType(self: *const Entry) u8 {
         return self.layout.file_type;
     }

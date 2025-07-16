@@ -34,7 +34,11 @@ pub fn validateFreeSpaceCounts(bgd: *const BlockGroupLayout, superblock_layout: 
     return true;
 }
 
-pub fn validateMetadataBlocks(bgd: *const BlockGroupLayout, block_group: u32, superblock_layout: *const SuperblockLayout) bool {
+pub fn validateMetadataBlocks(
+    bgd: *const BlockGroupLayout,
+    block_group: u32,
+    superblock_layout: *const SuperblockLayout,
+) bool {
     const blocks_per_group = superblock_layout.s_blocks_per_group;
     const group_start_block = @as(u64, block_group) * blocks_per_group;
     const group_end_block = group_start_block + blocks_per_group;

@@ -11,41 +11,23 @@ Allows filesystem creation from file, holds mounted filesystem as union
 Module exports
 
 ## Ext4
-### Layout
 
-```
-Block 0: Boot block (unused)
-Block 1: Superblock
-  ─ Magic number (0xEF53) for detection
-  ─ Block/inode counts and configuration  
-  ─ Feature flags and validation data
-Block >=2: Block group descriptors
-Block Groups:
-  ─ Block bitmap (tracks allocated blocks)
-  ─ Inode bitmap (tracks allocated inodes)
-  ─ Inode table (array of inode structures)
-  ─ Data blocks (file and directory content)
+### Architecture
 
-Data Flow:
-Directory Entry → Inode (metadata + extents) → Data Blocks
-```
+#### `/types/`
+Wrappers around on-disk structures
 
-### Structure
+#### `/disk/`
+- On-disk data layouts structures
+- Low-level disk operations
 
-#### `/algorithms/`
-Low level algorithms, operates on layouts
-
-#### `/layout/`
-Raw on-disk ext4 structures definitions (extern/packed structs)
-
-#### `/structures/` 
-High-level wrappers around layouts
+#### `/parsing/`
+Parsing and validation algorithms
 
 #### `/operations/`
-Filesystem operations using structures and layouts
+High-level filesystem operations
 
-#### `ext4_fs.zig`
-Main filesystem interface - coordinates all operations  
+#### `ext4.zig`
 Public API for filesystem access
 
 ---

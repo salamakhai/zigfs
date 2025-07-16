@@ -1,120 +1,115 @@
+//! Path resolution operations
+
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const Error = @import("../error.zig").Ext4Error;
-
 const Entry = @import("../types/entry.zig").Entry;
-const Inode = @import("../types/inode.zig").Inode;
 const Superblock = @import("../types/superblock.zig").Superblock;
 const DiskReader = @import("../disk/reader.zig").Reader;
-const Walker = @import("walker.zig").Walker;
+const walker = @import("walker.zig");
 
-pub const Resolver = struct {
-    // Fields
-    reader: *const DiskReader,
+// Public
+pub fn getRootEntry(
+    disk_reader: *const DiskReader,
     superblock: *const Superblock,
-    walker: Walker,
+) !Entry {
+    const root_inode = try disk_reader.readInodeByNumber(
+        2,
+        superblock.inodesPerGroup(),
+        256, // TODO: Get from superblock
+    );
 
-    // Lifecycle
-    pub fn init(reader: *const DiskReader, superblock: *const Superblock) Resolver {
-        return Resolver{
-            .reader = reader,
-            .superblock = superblock,
-            .walker = Walker.init(reader, superblock),
-        };
+    if (!root_inode.isDirectory()) {
+        return Error.NotDirectory;
     }
 
-    // Public
-    pub fn getRootEntry(self: *const Resolver) !Entry {
-        const root_inode = try self.reader.readInodeByNumber(
-            2,
-            self.superblock.inodesPerGroup(),
-            256, // TODO: Get from superblock
-        );
+    return Entry.create(2, 1, Entry.FileType.DIR, "/");
+}
 
-        if (!root_inode.isDirectory()) {
-            return Error.NotDirectory;
-        }
-
-        return Entry.create(2, 1, Entry.FileType.DIR, "/");
-    }
-
-    pub fn resolvePath(self: *const Resolver, allocator: Allocator, path: []const u8) !Entry {
-        if (path.len == 0) {
-            return Error.EntryNotFound;
-        }
-
-        if (std.mem.eql(u8, path, "/")) {
-            return self.getRootEntry();
-        }
-
-        var current_entry = try self.getRootEntry();
-
-        var path_components = std.ArrayList([]const u8).init(allocator);
-        defer path_components.deinit();
-
-        try self.splitPath(path, &path_components);
-
-        for (path_components.items) |component| {
-            if (component.len == 0) continue;
-
-            const next_entry = try self.findEntryInDirectory(
-                allocator,
-                &current_entry,
-                component,
-            );
-
-            if (current_entry.name) |name| {
-                if (!std.mem.eql(u8, name, "/")) {
-                    allocator.free(name);
-                }
-            }
-            current_entry = next_entry;
-        }
-
-        return current_entry;
-    }
-
-    // Private
-    fn findEntryInDirectory(
-        self: *const Resolver,
-        allocator: Allocator,
-        directory_entry: *const Entry,
-        target_name: []const u8,
-    ) !Entry {
-        if (!directory_entry.isDirectory()) {
-            return Error.NotDirectory;
-        }
-
-        if (try self.walker.findInDirectory(
-            allocator,
-            directory_entry,
-            target_name,
-        )) |target_entry| {
-            return target_entry;
-        }
-
+pub fn resolvePath(
+    allocator: Allocator,
+    disk_reader: *const DiskReader,
+    superblock: *const Superblock,
+    path: []const u8,
+) !Entry {
+    if (path.len == 0) {
         return Error.EntryNotFound;
     }
 
-    fn splitPath(self: *const Resolver, path: []const u8, components: *std.ArrayList([]const u8)) !void {
-        _ = self;
-
-        var start: usize = 0;
-
-        if (path.len > 0 and path[0] == '/') {
-            start = 1;
-        }
-
-        var i = start;
-        while (i <= path.len) {
-            if (i == path.len or path[i] == '/') {
-                if (i > start) {
-                    try components.append(path[start..i]);
-                }
-                start = i + 1;
-            }
-            i += 1;
-        }
+    if (std.mem.eql(u8, path, "/")) {
+        return getRootEntry(disk_reader, superblock);
     }
-};
+
+    var current_entry = try getRootEntry(disk_reader, superblock);
+
+    var path_components = std.ArrayList([]const u8).init(allocator);
+    defer path_components.deinit();
+
+    try splitPath(path, &path_components);
+
+    for (path_components.items) |component| {
+        if (component.len == 0) continue;
+
+        const next_entry = try findEntryInDirectory(
+            allocator,
+            disk_reader,
+            superblock,
+            &current_entry,
+            component,
+        );
+
+        if (current_entry.name) |name| {
+            if (!std.mem.eql(u8, name, "/")) {
+                allocator.free(name);
+            }
+        }
+        current_entry = next_entry;
+    }
+
+    return current_entry;
+}
+
+// Private
+fn findEntryInDirectory(
+    allocator: Allocator,
+    disk_reader: *const DiskReader,
+    superblock: *const Superblock,
+    directory_entry: *const Entry,
+    target_name: []const u8,
+) !Entry {
+    if (!directory_entry.isDirectory()) {
+        return Error.NotDirectory;
+    }
+
+    if (try walker.findInDirectory(
+        allocator,
+        disk_reader,
+        superblock,
+        directory_entry,
+        target_name,
+    )) |target_entry| {
+        return target_entry;
+    }
+
+    return Error.EntryNotFound;
+}
+
+fn splitPath(path: []const u8, components: *std.ArrayList([]const u8)) !void {
+    var start: usize = 0;
+
+    if (path.len > 0 and path[0] == '/') {
+        start = 1;
+    }
+
+    var i = start;
+    while (i <= path.len) {
+        if (i == path.len or path[i] == '/') {
+            if (i > start) {
+                try components.append(path[start..i]);
+            }
+            start = i + 1;
+        }
+        i += 1;
+    }
+}

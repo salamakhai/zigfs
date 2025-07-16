@@ -4,10 +4,6 @@ const InodeLayout = @import("../disk/layout.zig").InodeLayout;
 pub const Inode = struct {
     layout: InodeLayout,
 
-    pub fn fromLayout(layout: InodeLayout) Inode {
-        return Inode{ .layout = layout };
-    }
-
     pub fn blockData(self: *const Inode) [60]u8 {
         return std.mem.asBytes(&self.layout.i_block).*;
     }

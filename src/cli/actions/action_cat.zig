@@ -74,7 +74,7 @@ fn invoke(
         return ActionError.NotFile;
     }
 
-    const file_data = ext4_fs.extractFile(&file_entry) catch |err| {
+    const file_data = ext4_fs.readFile(allocator, &file_entry) catch |err| {
         writer.print("Error reading file '{s}': {!}\n", .{ file_path, err }) catch {};
         return ActionError.ReadError;
     };
