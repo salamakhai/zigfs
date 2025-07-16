@@ -1,6 +1,6 @@
 const std = @import("std");
 const SuperblockLayout = @import("../layout/superblock_layout.zig").SuperblockLayout;
-const SuperblockValidationAlgorithm = @import("../algorithms/superblock_validation.zig").SuperblockValidationAlgorithm;
+const superblockValidation = @import("../algorithms/superblock_validation.zig");
 
 const EXT4_SUPER_MAGIC: u16 = SuperblockLayout.MAGIC_NUMBER;
 const SUPERBLOCK_OFFSET: u64 = SuperblockLayout.OFFSET_IN_DEVICE;
@@ -28,7 +28,7 @@ pub const Superblock = struct {
         file.seekTo(SuperblockLayout.OFFSET_IN_DEVICE + @offsetOf(SuperblockLayout, "s_magic")) catch {
             return false;
         };
-        
+
         var magic: u16 = undefined;
         const bytes_read = file.readAll(std.mem.asBytes(&magic)) catch return false;
 
@@ -52,19 +52,20 @@ pub const Superblock = struct {
 
     // Public
     pub fn blockSize(self: *const Superblock) u32 {
-        const validation_result = SuperblockValidationAlgorithm.validateBlockSize(&self.layout);
-        return validation_result.block_size;
+        // Calculate block size from logarithmic field
+        const log_block_size = @as(u5, @truncate(self.layout.s_log_block_size));
+        const block_size = SuperblockLayout.MIN_BLOCK_SIZE << log_block_size;
+
+        return block_size;
     }
 
     pub fn isValid(self: *const Superblock) bool {
-        // Check basic EXT4 magic number
         if (self.layout.s_magic != SuperblockLayout.MAGIC_NUMBER) {
             return false;
         }
-        
-        // Check if it's a valid block size
-        const block_size = self.blockSize();
-        return block_size >= 1024 and block_size <= 65536 and (block_size & (block_size - 1)) == 0;
+
+        const validation_result = superblockValidation.validateBlockSize(&self.layout);
+        return validation_result.is_valid;
     }
 
     pub fn validate(
@@ -73,7 +74,7 @@ pub const Superblock = struct {
     ) (SuperblockError || @TypeOf(writer).Error)!void {
         try writer.print("Validating superblock...\n", .{});
 
-        const validation_result = SuperblockValidationAlgorithm.validateSuperblock(&self.layout);
+        const validation_result = superblockValidation.validateSuperblock(&self.layout);
 
         try writer.print("Magic number: read=0x{X:0>4}, expected=0x{X:0>4}\n", .{ self.layout.s_magic, EXT4_SUPER_MAGIC });
         try writer.print("Blocks count: {}\n", .{self.layout.s_blocks_count_lo});

@@ -8,9 +8,13 @@ const Core = @import("../core/core.zig").Core;
 const Action = Core.Action;
 const Context = Core.Context;
 const Allocator = Core.Allocator;
+
 const Writer = Core.Writer;
 const ArgIterator = Core.ArgIterator;
 const ActionError = Action.ActionError;
+
+const formatters = @import("../core/formatters.zig");
+const formatFileSize = formatters.formatFileSize;
 
 // Public
 pub fn createAction() Action {
@@ -84,13 +88,13 @@ fn invoke(
     }
 
     // Print header
-    writer.print("{s:<25} {s:<10} {s:<15} {s}\n", .{ "Name", "Type", "Permissions", "Size" }) catch {};
-    writer.print("{s}\n", .{"-" ** 62}) catch {};
+    writer.print("{s:<25} {s:<10} {s:<15} {s:<10} {s:<7}\n", .{ "Name", "Type", "Permissions", "Size", "Volume" }) catch {};
+    writer.print("{s}\n", .{"-" ** 72}) catch {};
 
     // Print entries
     for (entries) |entry| {
         const entry_name = entry.name orelse "<unknown>";
-        
+
         const type_str = if (entry.isDirectory())
             "dir"
         else if (entry.isFile())
@@ -115,18 +119,23 @@ fn invoke(
         };
 
         var size_buffer: [32]u8 = undefined;
-        const formatted_size = formatFileSize(inode.size(), &size_buffer) catch "N/A";
+        const size: u64 = inode.size();
+
+        const formatted_size = formatFileSize(size, &size_buffer) catch "N/A";
 
         var perm_buffer: [10]u8 = undefined;
         const formatted_perms = inode.formatPermissions(&perm_buffer) catch "?????????";
 
+        const physical_size = "N/A";
+
         writer.print(
-            "{s:<25} {s:<10} {s:<15} {s}\n",
+            "{s:<25} {s:<10} {s:<15} {s:<10} {s:^7}\n",
             .{
                 entry_name,
                 type_str,
                 formatted_perms,
                 formatted_size,
+                physical_size,
             },
         ) catch {
             return ActionError.WriteError;
@@ -138,16 +147,4 @@ fn invoke(
         "\nTotal: {} entries\n",
         .{entries.len},
     ) catch {};
-}
-
-fn formatFileSize(size: u64, buffer: []u8) ![]const u8 {
-    if (size < 1024) {
-        return std.fmt.bufPrint(buffer, "{} B", .{size});
-    } else if (size < 1024 * 1024) {
-        return std.fmt.bufPrint(buffer, "{d:.1} KB", .{@as(f64, @floatFromInt(size)) / 1024.0});
-    } else if (size < 1024 * 1024 * 1024) {
-        return std.fmt.bufPrint(buffer, "{d:.1} MB", .{@as(f64, @floatFromInt(size)) / (1024.0 * 1024.0)});
-    } else {
-        return std.fmt.bufPrint(buffer, "{d:.1} GB", .{@as(f64, @floatFromInt(size)) / (1024.0 * 1024.0 * 1024.0)});
-    }
 }

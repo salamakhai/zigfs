@@ -7,17 +7,17 @@ const Reader = @import("reader.zig").Reader;
 const Error = @import("../ext4_error.zig").Ext4Error;
 
 pub const FileReader = struct {
-    // === Variables ===
+    // Variables
     reader: *const Reader,
 
-    // === Lifecycle ===
+    // Lifecycle
     pub fn init(reader: *const Reader) FileReader {
         return FileReader{
             .reader = reader,
         };
     }
 
-    // === Public ===
+    // Public
     /// Read complete file contents
     /// Returns owned buffer with file data
     pub fn readFile(self: *const FileReader, entry: *const Entry) ![]u8 {

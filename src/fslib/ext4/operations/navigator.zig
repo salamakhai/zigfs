@@ -10,11 +10,11 @@ const EntryTraversal = @import("entry_traversal.zig").EntryTraversal;
 
 /// Responsible for resolving filesystem paths to Entry structures
 pub const Navigator = struct {
-    // === Variables ===
+    // Variables
     reader: *const Reader,
     traversal: EntryTraversal,
 
-    // === Lifecycle ===
+    // Lifecycle
     pub fn init(reader: *const Reader) Navigator {
         return Navigator{
             .reader = reader,
@@ -22,7 +22,7 @@ pub const Navigator = struct {
         };
     }
 
-    // === Public ===
+    // Public
     /// Get root directory entry (inode 2)
     pub fn getRootEntry(self: *const Navigator) !Entry {
         const root_inode = try self.reader.readInode(2);
@@ -67,7 +67,7 @@ pub const Navigator = struct {
         return current_entry;
     }
 
-    // === Private ===
+    // Private
     fn findEntryInDirectory(
         self: *const Navigator,
         allocator: Allocator,

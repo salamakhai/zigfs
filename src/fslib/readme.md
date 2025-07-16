@@ -47,3 +47,10 @@ Filesystem operations using structures and layouts
 #### `ext4_fs.zig`
 Main filesystem interface - coordinates all operations  
 Public API for filesystem access
+
+---
+
+### References
+- https://docs.kernel.org/filesystems/index.html
+- https://github.com/torvalds/linux/tree/master/fs/ext4
+- https://blogs.oracle.com/linux/post/understanding-ext4-disk-layout-part-1

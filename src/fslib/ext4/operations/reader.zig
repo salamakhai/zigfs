@@ -10,12 +10,12 @@ const BlockGroup = @import("../structures/block_group.zig").BlockGroup;
 const ExtentHeader = @import("../structures/extent.zig").ExtentHeader;
 const Extent = @import("../structures/extent.zig").Extent;
 
-const InodeLocationAlgorithm = @import("../algorithms/inode_location.zig").InodeLocationAlgorithm;
-const ExtentResolutionAlgorithm = @import("../algorithms/extent_resolution.zig").ExtentResolutionAlgorithm;
+const inodeLocation = @import("../algorithms/inode_location.zig");
+const extentResolution = @import("../algorithms/extent_resolution.zig");
 
 /// Low-level block and inode reading
 pub const Reader = struct {
-    // === Variables ===
+    // Variables
     allocator: Allocator,
     file: fs.File,
     superblock: *const Superblock,
@@ -41,15 +41,14 @@ pub const Reader = struct {
             return FilesystemError.ReadError;
         }
 
-        const location = InodeLocationAlgorithm.calculateLocation(
+        const location = inodeLocation.calculateLocation(
             inode_number,
-            &self.superblock.layout,
-            self.block_size,
+            self.superblock,
         );
 
         const bgd = try self.readBlockGroupDescriptor(location.block_group_number);
 
-        const inode_offset = InodeLocationAlgorithm.calculateInodeOffset(
+        const inode_offset = inodeLocation.calculateInodeOffset(
             bgd.inodeTableBlock(),
             location.inode_index_in_group,
             location.inode_size,
@@ -77,18 +76,18 @@ pub const Reader = struct {
         const block_data = inode.blockData();
         const extent_data = std.mem.asBytes(&block_data);
 
-        const header = ExtentResolutionAlgorithm.parseExtentHeader(extent_data) orelse {
+        const header = extentResolution.parseExtentHeader(extent_data) orelse {
             return FilesystemError.ReadError;
         };
 
-        if (ExtentResolutionAlgorithm.isLeafNode(header)) {
+        if (extentResolution.isLeafNode(header)) {
             // Use algorithm to extract extent mappings
 
             var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
             defer arena.deinit();
             const allocator = arena.allocator();
 
-            const mappings = ExtentResolutionAlgorithm.extractLeafExtents(
+            const mappings = extentResolution.extractLeafExtents(
                 extent_data,
                 allocator,
             ) catch {
@@ -106,7 +105,7 @@ pub const Reader = struct {
     }
 
     fn readBlockGroupDescriptor(self: *const Reader, group_number: u32) !BlockGroup {
-        const bgd_offset = InodeLocationAlgorithm.calculateBlockGroupDescriptorOffset(
+        const bgd_offset = inodeLocation.calculateBlockGroupDescriptorOffset(
             group_number,
             self.block_size,
         );
@@ -135,7 +134,7 @@ pub const Reader = struct {
         return inode;
     }
 
-    fn readExtentMapping(self: *const Reader, data: []u8, mapping: ExtentResolutionAlgorithm.ExtentMapping) !void {
+    fn readExtentMapping(self: *const Reader, data: []u8, mapping: extentResolution.ExtentMapping) !void {
         const logical_offset = mapping.logicalByteOffset(self.block_size);
         const physical_offset = mapping.physicalByteOffset(self.block_size);
         const extent_size = mapping.sizeInBytes(self.block_size);

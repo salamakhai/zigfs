@@ -32,6 +32,19 @@ pub const BlockGroupLayout = extern struct {
     bg_inode_bitmap_csum_lo: u16, // 0x1A: Inode bitmap checksum (lower 16 bits)
     bg_itable_unused_lo: u16,     // 0x1C: Unused inode count (lower 16 bits)
     bg_checksum: u16,             // 0x1E: Group descriptor checksum
+
+    // 64-bit support (0x20-0x3F)
+    bg_block_bitmap_hi: u32,
+    bg_inode_bitmap_hi: u32,
+    bg_inode_table_hi: u32,
+    bg_free_blocks_count_hi: u16,
+    bg_free_inodes_count_hi: u16,
+    bg_used_dirs_count_hi: u16,
+    bg_itable_unused_hi: u16,
+    bg_exclude_bitmap_hi: u32,
+    bg_block_bitmap_csum_hi: u16,
+    bg_inode_bitmap_csum_hi: u16,
+    reserved: u32,  
     
     // Block group flags
     pub const BG_FLAGS = struct {
@@ -47,7 +60,7 @@ pub const BlockGroupLayout = extern struct {
         // Compile time check:
         // Ensure the block group descriptor layout is 32 bytes
         // This is the size for the basic descriptor
-        std.debug.assert(@sizeOf(BlockGroupLayout) == 32);
+        std.debug.assert(@sizeOf(BlockGroupLayout) == 64);
     }
     
     // Note: EXT4 supports extended block group descriptors (64 bytes) when
