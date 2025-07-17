@@ -25,7 +25,7 @@ pub fn readDirectory(
     const inode = try disk_reader.readInodeByNumber(
         inode_number,
         superblock.inodesPerGroup(),
-        256, // TODO: Get from superblock
+        superblock.inodeSize(),
     );
 
     if (!inode.isDirectory()) {

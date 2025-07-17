@@ -53,7 +53,7 @@ pub fn readEntryInode(
     const file_inode = try disk_reader.readInodeByNumber(
         inode_number,
         superblock.inodesPerGroup(),
-        256, // TODO: Get from superblock
+        superblock.inodeSize(),
     );
 
     return file_inode;

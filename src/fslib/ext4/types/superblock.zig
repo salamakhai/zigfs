@@ -39,6 +39,10 @@ pub const Superblock = struct {
         return @as(u32, 1024) << @intCast(self.layout.s_log_block_size);
     }
 
+    pub fn inodeSize(self: *const Superblock) u16 {
+        return self.layout.s_inode_size;
+    }
+
     pub fn magic(self: *const Superblock) u16 {
         return self.layout.s_magic;
     }

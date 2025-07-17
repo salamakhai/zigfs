@@ -17,7 +17,7 @@ pub fn getRootEntry(
     const root_inode = try disk_reader.readInodeByNumber(
         2,
         superblock.inodesPerGroup(),
-        256, // TODO: Get from superblock
+        superblock.inodeSize(),
     );
 
     if (!root_inode.isDirectory()) {
