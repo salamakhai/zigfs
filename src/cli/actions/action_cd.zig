@@ -54,7 +54,6 @@ fn invoke(
         writer.print("Error: Path '{s}' not found\n", .{target_path}) catch {};
         return ActionError.InvalidPath;
     };
-    defer if (entry.name) |name| allocator.free(name);
 
     if (!entry.isDirectory()) {
         writer.print("Error: '{s}' is not a directory\n", .{target_path}) catch {};

@@ -9,14 +9,15 @@ const Superblock = @import("../types/superblock.zig").Superblock;
 const DiskReader = @import("../disk/reader.zig").Reader;
 const entries_parsing = @import("../parsing/entries.zig");
 const reader = @import("reader.zig");
+const EntryContext = @import("../types/entry_context.zig").EntryContext;
 
 // Public
-pub fn readDirectory(
+pub fn readDirectoryContext(
     allocator: Allocator,
     disk_reader: *const DiskReader,
     superblock: *const Superblock,
     entry: *const Entry,
-) ![]Entry {
+) !EntryContext {
     if (!entry.isDirectory()) {
         return Error.NotDirectory;
     }
@@ -32,10 +33,23 @@ pub fn readDirectory(
         return Error.NotDirectory;
     }
 
-    const directory_data = try reader.readInodeData(allocator, disk_reader, superblock, &inode);
-    defer allocator.free(directory_data);
+    const directory_data = try reader.readInodeData(
+        allocator,
+        disk_reader,
+        superblock,
+        &inode,
+    );
 
-    return entries_parsing.parseDirectoryEntries(directory_data, allocator);
+    const entries = try entries_parsing.parseDirectoryEntries(
+        directory_data,
+        allocator,
+    );
+
+    return EntryContext.init(
+        allocator,
+        entries,
+        directory_data,
+    );
 }
 
 pub fn findInDirectory(
@@ -45,24 +59,27 @@ pub fn findInDirectory(
     directory_entry: *const Entry,
     target_name: []const u8,
 ) !?Entry {
-    const entries = try readDirectory(allocator, disk_reader, superblock, directory_entry);
-    defer {
-        for (entries) |*entry| {
-            if (entry.name) |name| {
-                allocator.free(name);
-            }
-        }
-        allocator.free(entries);
+    if (!directory_entry.isDirectory()) {
+        return Error.NotDirectory;
     }
 
-    for (entries) |entry| {
-        if (entry.name) |name| {
-            if (std.mem.eql(u8, name, target_name)) {
-                return Entry{
-                    .layout = entry.layout,
-                    .name = try allocator.dupe(u8, name),
-                };
-            }
+    const inode_number = directory_entry.inodeNumber();
+    const inode = try disk_reader.readInodeByNumber(
+        inode_number,
+        superblock.inodesPerGroup(),
+        superblock.inodeSize(),
+    );
+
+    if (!inode.isDirectory()) {
+        return Error.NotDirectory;
+    }
+
+    var context = try readDirectoryContext(allocator, disk_reader, superblock, directory_entry);
+    defer context.deinit();
+
+    for (0..context.entries.len) |i| {
+        if (context.entryNameEql(i, target_name)) {
+            return context.entries[i];
         }
     }
 

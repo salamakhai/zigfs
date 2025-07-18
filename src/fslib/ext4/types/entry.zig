@@ -3,12 +3,14 @@ const Allocator = std.mem.Allocator;
 const EntryLayout = @import("../disk/layout.zig").EntryLayout;
 
 pub const Entry = struct {
+    // Fields
     layout: EntryLayout,
-    name: ?[]const u8 = null,
 
+    // Types
     pub const FileType = EntryLayout.FILE_TYPES;
 
-    pub fn create(inode_number: u32, name_len: u8, file_type: u8, name: []const u8) Entry {
+    // Lifecycle
+    pub fn create(inode_number: u32, name_len: u8, file_type: u8) Entry {
         return Entry{
             .layout = EntryLayout{
                 .inode = inode_number,
@@ -16,32 +18,9 @@ pub const Entry = struct {
                 .name_len = name_len,
                 .file_type = file_type,
             },
-            .name = name,
         };
     }
 
-    pub fn getCachedName(self: *const Entry) []const u8 {
-        return self.name;
-    }
-
-    pub fn getName(self: *const Entry, directory_data: []const u8, entry_offset: usize) []const u8 {
-        const name_start = entry_offset + @sizeOf(EntryLayout);
-        const name_end = name_start + self.layout.name_len;
-
-        if (name_end <= directory_data.len) {
-            return directory_data[name_start..name_end];
-        }
-
-        return &[_]u8{};
-    }
-
-    pub fn getOwnedName(self: *const Entry, allocator: Allocator, directory_data: []const u8, entry_offset: usize) ![]u8 {
-        const name_slice = self.getName(directory_data, entry_offset);
-        if (name_slice.len == 0) {
-            return error.InvalidName;
-        }
-        return try allocator.dupe(u8, name_slice);
-    }
 
     pub fn inodeNumber(self: *const Entry) u32 {
         return self.layout.inode;
@@ -137,8 +116,4 @@ pub const Entry = struct {
         return self.layout.inode == other.layout.inode;
     }
 
-    pub fn nameEql(self: *const Entry, data: []const u8, offset: usize, target_name: []const u8) bool {
-        const name = self.getName(data, offset);
-        return std.mem.eql(u8, name, target_name);
-    }
 };

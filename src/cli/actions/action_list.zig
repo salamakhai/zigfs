@@ -63,27 +63,19 @@ fn invoke(
             },
         }
     };
-    defer if (dir_entry.name) |name| allocator.free(name);
 
     if (!dir_entry.isDirectory()) {
         writer.print("Error: '{s}' is not a directory\n", .{path}) catch {};
         return ActionError.NotDirectory;
     }
 
-    const entries = ext4_fs.listDirectory(allocator, &dir_entry) catch |err| {
+    var dir_context = ext4_fs.readDirectoryContext(allocator, &dir_entry) catch |err| {
         writer.print("Error listing directory '{s}': {!}\n", .{ path, err }) catch {};
         return ActionError.ReadError;
     };
-    defer {
-        for (entries) |entry| {
-            if (entry.name) |name| {
-                allocator.free(name);
-            }
-        }
-        allocator.free(entries);
-    }
+    defer dir_context.deinit();
 
-    if (entries.len == 0) {
+    if (dir_context.entries.len == 0) {
         writer.print("Directory is empty\n", .{}) catch {};
         return;
     }
@@ -93,8 +85,9 @@ fn invoke(
     writer.print("{s}\n", .{"-" ** 72}) catch {};
 
     // Print entries
-    for (entries) |entry| {
-        const entry_name = entry.name orelse "<unknown>";
+    for (0..dir_context.entries.len) |i| {
+        const entry = dir_context.entries[i];
+        const entry_name = dir_context.getEntryNameByIndex(i);
 
         const type_str = if (entry.isDirectory())
             "dir"
@@ -113,8 +106,11 @@ fn invoke(
         else
             "unknown";
 
-        // Get inode information for size and mode
-        const inode = ext4_fs.disk_reader.readInodeByNumber(entry.inodeNumber(), ext4_fs.superblock.inodesPerGroup(), 256) catch |err| {
+        const inode = ext4_fs.disk_reader.readInodeByNumber(
+            entry.inodeNumber(),
+            ext4_fs.superblock.inodesPerGroup(),
+            ext4_fs.superblock.inodeSize(),
+        ) catch |err| {
             writer.print("Error reading inode for '{s}': {!}\n", .{ entry_name, err }) catch {};
             continue;
         };
@@ -146,6 +142,6 @@ fn invoke(
     // Print total
     writer.print(
         "\nTotal: {} entries\n",
-        .{entries.len},
+        .{dir_context.entries.len},
     ) catch {};
 }

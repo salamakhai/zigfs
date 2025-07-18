@@ -3,12 +3,6 @@ const Allocator = std.mem.Allocator;
 const EntryLayout = @import("../disk/layout.zig").EntryLayout;
 const Entry = @import("../types/entry.zig").Entry;
 
-// Types
-pub const ParsedEntry = struct {
-    layout: EntryLayout,
-    name: []const u8,
-};
-
 // Parsers
 pub fn parseDirectoryEntries(directory_data: []const u8, allocator: Allocator) ![]Entry {
     var entries = std.ArrayList(Entry).init(allocator);
@@ -36,10 +30,8 @@ pub fn parseDirectoryEntries(directory_data: []const u8, allocator: Allocator) !
         const name_end = name_start + entry_layout.name_len;
 
         if (name_end <= directory_data.len) {
-            const name = try allocator.dupe(u8, directory_data[name_start..name_end]);
             const entry = Entry{
                 .layout = entry_layout.*,
-                .name = name,
             };
             try entries.append(entry);
         }

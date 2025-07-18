@@ -29,7 +29,7 @@ pub const FilesystemSession = struct {
         return self.current_dir;
     }
 
-    pub fn buildCurrentPath(self: *const FilesystemSession, allocator: Allocator, path: []const u8) ![]const u8 {
+    pub fn buildCurrentPath(self: *const FilesystemSession, allocator: Allocator, path: []const u8) ![]u8 {
         const current_dir = self.getCurrentDirectory();
         if (std.mem.startsWith(u8, path, "/")) {
             return try allocator.dupe(u8, path);

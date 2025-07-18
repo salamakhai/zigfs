@@ -24,7 +24,10 @@ pub fn getRootEntry(
         return Error.NotDirectory;
     }
 
-    return Entry.create(2, 1, Entry.FileType.DIR, "/");
+    const inode_number = 2;
+    const name_len = 1;
+
+    return Entry.create(inode_number, name_len, Entry.FileType.DIR);
 }
 
 pub fn resolvePath(
@@ -51,20 +54,13 @@ pub fn resolvePath(
     for (path_components.items) |component| {
         if (component.len == 0) continue;
 
-        const next_entry = try findEntryInDirectory(
+        current_entry = try findEntryInDirectory(
             allocator,
             disk_reader,
             superblock,
             &current_entry,
             component,
         );
-
-        if (current_entry.name) |name| {
-            if (!std.mem.eql(u8, name, "/")) {
-                allocator.free(name);
-            }
-        }
-        current_entry = next_entry;
     }
 
     return current_entry;

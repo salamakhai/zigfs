@@ -7,6 +7,7 @@ const DiskReader = @import("disk/reader.zig").Reader;
 pub const Ext4 = struct {
     // Types
     pub const Superblock = @import("types/superblock.zig").Superblock;
+    pub const EntryContext = @import("types/entry_context.zig").EntryContext;
     pub const Entry = @import("types/entry.zig").Entry;
     pub const Inode = @import("types/inode.zig").Inode;
     pub const Error = @import("error.zig").Ext4Error;
@@ -14,6 +15,7 @@ pub const Ext4 = struct {
     const reader = @import("operations/reader.zig");
     const resolver = @import("operations/resolver.zig");
     const walker = @import("operations/walker.zig");
+    const entries_parsing = @import("parsing/entries.zig");
 
     // Fields
     file: fs.File,
@@ -34,10 +36,8 @@ pub const Ext4 = struct {
 
         // TODO -- Temp solution: in the future get volume name from superblock instead
         const basename = std.fs.path.basename(filename);
-        const formatted_name = if (std.mem.lastIndexOf(u8, basename, ".")) |dot_index|
-            basename[0..dot_index]
-        else
-            basename;
+        const maybe_index = std.mem.lastIndexOf(u8, basename, ".");
+        const formatted_name = if (maybe_index) |dot_index| basename[0..dot_index] else basename;
 
         filesystem.* = Ext4{
             .file = file,
@@ -57,8 +57,12 @@ pub const Ext4 = struct {
     }
 
     // Public
-    pub fn getOwnedFileName(self: *Ext4) []const u8 {
+    pub fn getFileName(self: *Ext4) []const u8 {
         return self.filename;
+    }
+
+    pub fn getOwnedFileName(allocator: Allocator, self: *Ext4) ![]u8 {
+        return allocator.dupe(u8, self.filename);
     }
 
     pub fn getRootEntry(self: *Ext4) !Entry {
@@ -108,8 +112,8 @@ pub const Ext4 = struct {
         return reader.isReadable(&self.disk_reader, &self.superblock, entry);
     }
 
-    pub fn listDirectory(self: *Ext4, allocator: Allocator, entry: *const Entry) ![]Entry {
-        return walker.readDirectory(
+    pub fn readDirectoryContext(self: *Ext4, allocator: Allocator, entry: *const Entry) !EntryContext {
+        return walker.readDirectoryContext(
             allocator,
             &self.disk_reader,
             &self.superblock,

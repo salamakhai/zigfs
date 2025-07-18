@@ -50,8 +50,13 @@ pub const Filesystem = struct {
         }
     }
 
-    pub fn getOwnedName(self: *const Filesystem) []const u8 {
+    pub fn getName(self: *const Filesystem) []const u8 {
         const ext4_fs = self.get(Ext4) catch return "unknown";
-        return ext4_fs.getOwnedFileName();
+        return ext4_fs.getFileName();
+    }
+
+    pub fn getOwnedName(self: *const Filesystem, allocator: Allocator) []const u8 {
+        const ext4_fs = self.get(Ext4) catch return "unknown";
+        return ext4_fs.getOwnedFileName(allocator);
     }
 };

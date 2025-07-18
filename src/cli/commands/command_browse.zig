@@ -104,7 +104,7 @@ fn printPromt(writer: Core.Writer, context: *Context) void {
 
     if (context.filesystem) |fs_ctx| {
         const current_dir = fs_ctx.session.getCurrentDirectory();
-        const fs_name = fs_ctx.filesystem.getOwnedName();
+        const fs_name = fs_ctx.filesystem.getName();
 
         writer.print("{s}{s}{s} {s}{s}{s} {s}~{s}{s} {s}{s}{s} ", .{
             Colors.get(Colors.magenta), mark,        Colors.get(Colors.reset),
