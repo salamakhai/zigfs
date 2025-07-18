@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 pub const FilesystemSession = struct {
-    // Variables
+    // Fields
     allocator: Allocator,
     current_dir: []u8,
 

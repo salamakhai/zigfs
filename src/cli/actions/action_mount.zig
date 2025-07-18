@@ -65,7 +65,7 @@ fn invoke(
         };
     };
 
-    context.newFilesystem(allocator, filesystem) catch |err| {
+    context.initFilesystem(allocator, filesystem) catch |err| {
         writer.print("Context initialization error: {!}\n", .{err}) catch {};
         allocator.destroy(filesystem);
         return ActionError.OutOfMemory;

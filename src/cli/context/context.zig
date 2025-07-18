@@ -2,13 +2,16 @@ const std = @import("std");
 const Core = @import("../core/core.zig").Core;
 const Allocator = Core.Allocator;
 
+const context_filesystem = @import("fs/context.zig");
+
 /// Unified context
 pub const Context = struct {
-    filesystem: ?FilesystemContext = null,
-
     // Types
-    pub const FilesystemContext = @import("context_filesystem.zig").FilesystemContext;
+    pub const FilesystemContext = context_filesystem.FilesystemContext;
     const FileSystem = FilesystemContext.Filesystem;
+
+    // Fields
+    filesystem: ?FilesystemContext = null,
 
     // Lifecycle
     pub fn init() Context {
@@ -20,7 +23,7 @@ pub const Context = struct {
     }
 
     // FileSystem
-    pub fn newFilesystem(self: *Context, allocator: Allocator, fs: *FileSystem) !void {
+    pub fn initFilesystem(self: *Context, allocator: Allocator, fs: *FileSystem) !void {
         if (self.filesystem) |*current| {
             current.deinit();
         }

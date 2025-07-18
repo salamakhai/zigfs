@@ -1,15 +1,18 @@
 const Core = @import("../core/core.zig").Core;
 const Allocator = Core.Allocator;
 
+const fslib = @import("fslib");
+const fs_session = @import("session.zig");
+
 pub const FilesystemContext = struct {
-    // Variables
+    // Types
+    pub const Filesystem = fslib.FileSystem;
+    const Session = fs_session.FilesystemSession;
+
+    // Fields
     filesystem: *Filesystem,
     session: Session,
     allocator: Allocator,
-
-    // Types
-    pub const Filesystem = @import("fslib").FileSystem;
-    const Session = @import("filesystem_session.zig").FilesystemSession;
 
     // Lifecycle
     pub fn init(allocator: Allocator, fs: *Filesystem) !FilesystemContext {
