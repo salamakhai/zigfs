@@ -10,7 +10,7 @@ pub const Entry = struct {
     pub const FileType = EntryLayout.FILE_TYPES;
 
     // Lifecycle
-    pub fn create(inode_number: u32, name_len: u8, file_type: u8) Entry {
+    pub fn init(inode_number: u32, name_len: u8, file_type: u8) Entry {
         return Entry{
             .layout = EntryLayout{
                 .inode = inode_number,
@@ -21,7 +21,7 @@ pub const Entry = struct {
         };
     }
 
-
+    // Public
     pub fn inodeNumber(self: *const Entry) u32 {
         return self.layout.inode;
     }
@@ -115,5 +115,4 @@ pub const Entry = struct {
     pub fn eql(self: *const Entry, other: *const Entry) bool {
         return self.layout.inode == other.layout.inode;
     }
-
 };

@@ -16,9 +16,9 @@ pub const Filesystem = struct {
     };
 
     // Lifecycle
-    pub fn create(allocator: Allocator, file: std.fs.File, filename: []const u8) !Filesystem {
+    pub fn init(allocator: Allocator, file: std.fs.File, filename: []const u8) !Filesystem {
         if (Ext4.detect(file)) {
-            const ext4_fs = try Ext4.create(allocator, file, filename);
+            const ext4_fs = try Ext4.init(allocator, file, filename);
             return Filesystem{
                 .filesystem = Union{ .ext4 = ext4_fs },
                 .mounted_type = .ext4,
@@ -28,9 +28,9 @@ pub const Filesystem = struct {
         return error.UnsupportedFilesystem;
     }
 
-    pub fn destroy(self: *Filesystem) void {
+    pub fn deinit(self: *Filesystem) void {
         switch (self.filesystem) {
-            .ext4 => |fs| fs.destroy(),
+            .ext4 => |fs| fs.deinit(),
         }
     }
 

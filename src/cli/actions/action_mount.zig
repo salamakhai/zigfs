@@ -51,7 +51,7 @@ fn invoke(
         return ActionError.OutOfMemory;
     };
 
-    filesystem.* = FileSystem.create(
+    filesystem.* = FileSystem.init(
         allocator,
         file,
         file_path,

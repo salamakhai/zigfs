@@ -19,7 +19,7 @@ pub const Superblock = struct {
         return bytes_read == @sizeOf(u16) and magic_bytes == SuperblockLayout.MAGIC_NUMBER;
     }
 
-    pub fn create(file: std.fs.File) !Superblock {
+    pub fn init(file: std.fs.File) !Superblock {
         try file.seekTo(SuperblockLayout.OFFSET_IN_DEVICE);
 
         var layout: SuperblockLayout = undefined;

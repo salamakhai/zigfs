@@ -27,7 +27,11 @@ pub fn getRootEntry(
     const inode_number = 2;
     const name_len = 1;
 
-    return Entry.create(inode_number, name_len, Entry.FileType.DIR);
+    return Entry.init(
+        inode_number,
+        name_len,
+        Entry.FileType.DIR,
+    );
 }
 
 pub fn resolvePath(

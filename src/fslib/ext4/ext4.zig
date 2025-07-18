@@ -26,12 +26,8 @@ pub const Ext4 = struct {
     disk_reader: DiskReader,
 
     // Lifecycle
-    pub fn detect(file: fs.File) bool {
-        return Superblock.detect(file);
-    }
-
-    pub fn create(allocator: Allocator, file: fs.File, filename: []const u8) !*Ext4 {
-        const superblock = try Superblock.create(file);
+    pub fn init(allocator: Allocator, file: fs.File, filename: []const u8) !*Ext4 {
+        const superblock = try Superblock.init(file);
         const filesystem = try allocator.create(Ext4);
 
         // TODO -- Temp solution: in the future get volume name from superblock instead
@@ -50,10 +46,14 @@ pub const Ext4 = struct {
         return filesystem;
     }
 
-    pub fn destroy(self: *Ext4) void {
+    pub fn deinit(self: *Ext4) void {
         self.file.close();
         self.allocator.free(self.filename);
         self.allocator.destroy(self);
+    }
+
+    pub fn detect(file: fs.File) bool {
+        return Superblock.detect(file);
     }
 
     // Public
