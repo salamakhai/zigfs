@@ -1,4 +1,4 @@
-const Core = @import("../core/core.zig").Core;
+const Core = @import("../../core/core.zig").Core;
 const Allocator = Core.Allocator;
 
 const fslib = @import("fslib");
