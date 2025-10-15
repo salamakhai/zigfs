@@ -35,4 +35,6 @@ Public API for filesystem access
 ### References
 - https://docs.kernel.org/filesystems/index.html
 - https://github.com/torvalds/linux/tree/master/fs/ext4
+
 - https://blogs.oracle.com/linux/post/understanding-ext4-disk-layout-part-1
+- https://blogs.oracle.com/linux/post/understanding-ext4-disk-layout-part-2
