@@ -1,31 +1,12 @@
 # ZIGFS
-[Github link](https://github.com/isalamaha/zigfs.git)  
-A filesystem exploration tool written in Zig that allows browse and extract files from filesystem images without mounting them.  
 
+A filesystem cli browser  
 Supports formats: **ext4**
 
-## Modules Documentation
+## Modules
 
 [/fslib](src/fslib/readme.md)  
 [/cli](src/cli/readme.md)
-
-## Test
-Binary and test image are included  
-
-Executable location:
-```
-zig-out/bin/zigfs 
-```
-Sample images locations:
-```
-test/ext4_test.img
-```
-**Test browse command:**
-```sh
-./zig-out/bin/zigfs browse test/ext4_test.img 
-```
-
----  
 
 ## Building
 
@@ -46,9 +27,7 @@ chmod +x zig-out/bin/zigfs
 ./zig-out/bin/zigfs
 ```
 
-## Examples
-
-### Browser example session
+## Example browser session
 ```
  % ./zig-out/bin/zigfs browse test/ext4_test.img 
 Opening file: test/ext4_test.img...
